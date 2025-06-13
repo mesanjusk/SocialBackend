@@ -1,5 +1,5 @@
-import express from 'express';
-import Enquiry from '../models/Enquiry.js';
+const express = require('express');
+const Enquiry = require('../models/Enquiry');
 
 const router = express.Router();
 
