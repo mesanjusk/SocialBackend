@@ -82,4 +82,76 @@ router.get("/GetOrganizList", async (req, res) => {
     }
   });
 
+  router.delete('/:id', async (req, res) => {
+  try {
+    const organization = await Organization.findById(req.params.id);
+
+    if (!organization) {
+      return res.status(404).json({ message: 'Organization not found' });
+    }
+
+    await Organization.findByIdAndDelete(req.params.id); 
+    res.json({ message: 'Organization deleted successfully' });
+
+  } catch (err) {
+    console.error('Delete error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+router.put('/:id', upload.single('image'), async (req, res) => {
+  try {
+    const {
+      organization_title,
+      organization_whatsapp_number,
+      organization_call_number,
+      organization_whatsapp_message,
+      domains,
+      login_username,
+      login_password,
+      theme_color,
+      org_whatsapp_number,
+      org_call_number,
+    } = req.body;
+
+    const file = req.file;
+
+    const updateData = {
+      organization_title,
+      organization_whatsapp_number,
+      organization_call_number,
+      organization_whatsapp_message,
+      login_username,
+      login_password,
+      theme_color,
+      domains: Array.isArray(domains) ? domains : domains?.split(','),
+      org_whatsapp_number: {
+        number: org_whatsapp_number,
+      },
+      org_call_number: {
+        number: org_call_number,
+      },
+    };
+
+    if (file) {
+      updateData.organization_logo = file.path;
+    }
+
+    const updatedOrg = await Organization.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+
+    if (!updatedOrg) {
+      return res.status(404).json({ message: 'Organization not found' });
+    }
+
+    res.json(updatedOrg);
+  } catch (err) {
+    console.error('Error updating organization:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
