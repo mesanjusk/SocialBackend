@@ -97,4 +97,54 @@ router.get("/GetUserList", async (req, res) => {
   }
 });
 
+router.delete('/:id', async (req, res) => {
+  try {
+    const users = await User.findById(req.params.id);
+
+    if (!users) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await User.findByIdAndDelete(req.params.id); 
+    res.json({ message: 'User deleted successfully' });
+
+  } catch (err) {
+    console.error('Delete error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+router.put("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, mobile, type, password } = req.body;
+
+  try {
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: id },
+      { name, mobile, type, password },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'User updated successfully',
+      result: updatedUser,
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating user',
+      error: error.message,
+    });
+  }
+});
+
 module.exports = router;
