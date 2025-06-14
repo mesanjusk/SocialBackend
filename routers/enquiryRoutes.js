@@ -2,29 +2,50 @@ const express = require('express');
 const router = express.Router();
 const Record = require('../models/Record');
 
-// Get all enquiries
+// GET all enquiries
 router.get('/', async (req, res) => {
-  const data = await Record.find({ type: 'enquiry' }).sort({ createdAt: -1 });
-  res.json(data);
+  try {
+    const data = await Record.find({ type: 'enquiry' }).sort({ createdAt: -1 });
+    res.status(200).json(data);
+  } catch (err) {
+    console.error('Error fetching enquiries:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
-// Create new enquiry
+// POST new enquiry
 router.post('/', async (req, res) => {
-  const enquiry = new Record({ ...req.body, type: 'enquiry' });
-  await enquiry.save();
-  res.json(enquiry);
+  try {
+    const enquiry = new Record({ ...req.body, type: 'enquiry' });
+    await enquiry.save();
+    res.status(201).json(enquiry);
+  } catch (err) {
+    console.error('Error creating enquiry:', err);
+    res.status(500).json({ error: 'Could not create enquiry' });
+  }
 });
 
-// Update enquiry
+// PUT update enquiry
 router.put('/:id', async (req, res) => {
-  const updated = await Record.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  res.json(updated);
+  try {
+    const updated = await Record.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) return res.status(404).json({ error: 'Enquiry not found' });
+    res.status(200).json(updated);
+  } catch (err) {
+    console.error('Error updating enquiry:', err);
+    res.status(500).json({ error: 'Could not update enquiry' });
+  }
 });
 
-// Delete enquiry
+// DELETE enquiry
 router.delete('/:id', async (req, res) => {
-  await Record.findByIdAndDelete(req.params.id);
-  res.json({ message: 'Deleted' });
+  try {
+    await Record.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'Deleted' });
+  } catch (err) {
+    console.error('Error deleting enquiry:', err);
+    res.status(500).json({ error: 'Could not delete enquiry' });
+  }
 });
 
 module.exports = router;
