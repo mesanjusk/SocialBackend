@@ -1,6 +1,8 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
 
 const enquirySchema = new mongoose.Schema({
+  uuid: { type: String, default: uuidv4 },
   branchCode: String,
   enquiryDate: Date,
   firstName: String,
@@ -21,4 +23,4 @@ const enquirySchema = new mongoose.Schema({
   course: String,
 }, { timestamps: true });
 
-export default mongoose.model('Enquiry', enquirySchema);
+module.exports = mongoose.model('Enquiry', enquirySchema);
