@@ -1,48 +1,30 @@
 const express = require('express');
 const router = express.Router();
-const Admission = require('../models/Admission');
+const Record = require('../models/Record');
 
-// GET all admissions
+// Get all admissions
 router.get('/', async (req, res) => {
-  try {
-    const data = await Admission.find().sort({ createdAt: -1 });
-    res.json(data);
-  } catch (err) {
-    console.error('GET error:', err);
-    res.status(500).json({ message: 'Failed to fetch admissions' });
-  }
+  const data = await Record.find({ type: 'admission' }).sort({ createdAt: -1 });
+  res.json(data);
 });
 
-// POST new admission
+// Create new admission
 router.post('/', async (req, res) => {
-  try {
-    const newAdmission = new Admission(req.body);
-    await newAdmission.save();
-    res.status(201).json({ success: true, message: 'Admission created' });
-  } catch (err) {
-    console.error('POST error:', err);
-    res.status(500).json({ message: 'Error saving admission' });
-  }
+  const admission = new Record({ ...req.body, type: 'admission' });
+  await admission.save();
+  res.json(admission);
 });
 
-// PUT update admission
+// Update admission
 router.put('/:id', async (req, res) => {
-  try {
-    await Admission.findByIdAndUpdate(req.params.id, req.body);
-    res.json({ success: true, message: 'Admission updated' });
-  } catch (err) {
-    res.status(500).json({ message: 'Error updating admission' });
-  }
+  const updated = await Record.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  res.json(updated);
 });
 
-// DELETE admission
+// Delete admission
 router.delete('/:id', async (req, res) => {
-  try {
-    await Admission.findByIdAndDelete(req.params.id);
-    res.json({ success: true, message: 'Admission deleted' });
-  } catch (err) {
-    res.status(500).json({ message: 'Error deleting admission' });
-  }
+  await Record.findByIdAndDelete(req.params.id);
+  res.json({ message: 'Deleted' });
 });
 
 module.exports = router;
