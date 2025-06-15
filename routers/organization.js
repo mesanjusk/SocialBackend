@@ -12,7 +12,7 @@ cloudinary.config({
 });
 
 const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
+  cloudinary,
   params: {
     folder: 'organization',
     allowed_formats: ['jpg', 'png', 'jpeg']
@@ -20,9 +20,9 @@ const storage = new CloudinaryStorage({
 });
 
 const upload = multer({ storage });
-
 const router = express.Router();
 
+// Add
 router.post("/add", upload.single("image"), async (req, res) => {
   const {
     organization_title,
@@ -32,65 +32,60 @@ router.post("/add", upload.single("image"), async (req, res) => {
     login_password,
     login_username,
     theme_color,
-    domains,  
-    org_whatsapp_number,
-    org_call_number
+    organization_type,
+    center_code
   } = req.body;
 
   const organization_logo = req.file ? req.file.path : null;
 
   try {
-    const check = await Organization.findOne({ organization_call_number });
+    const exists = await Organization.findOne({ center_code });
 
-    if (check) {
-      res.json("exist");
-    } else {
-      const newOrganization = new Organization({
-        organization_uuid: uuid(),
-        organization_title,
-        organization_whatsapp_number,
-        organization_call_number,
-        organization_whatsapp_message,
-        login_password,
-        login_username,
-        organization_logo,
-        theme_color,
-        domains,  
-        org_whatsapp_number,
-        org_call_number
-      });
-
-      await newOrganization.save();
-      res.json("notexist");
+    if (exists) {
+      return res.json("exist");
     }
-  } catch (e) {
-    console.error("Error saving organization:", e);
+
+    const newOrg = new Organization({
+      organization_uuid: uuid(),
+      organization_title,
+      organization_type,
+      organization_whatsapp_number,
+      organization_call_number,
+      organization_whatsapp_message,
+      login_password: center_code,
+      login_username: center_code,
+      organization_logo,
+      theme_color,
+      center_code
+    });
+
+    await newOrg.save();
+    res.json("notexist");
+
+  } catch (err) {
+    console.error("Error adding organization:", err);
     res.status(500).json("fail");
   }
 });
 
+// Get List
 router.get("/GetOrganizList", async (req, res) => {
-    try {
-      let data = await Organization.find({});
-  
-      if (data.length)
-        res.json({ success: true, result: data });
-      else res.json({ success: false, message: "Organiz Not found" });
-    } catch (err) {
-      console.error("Error fetching Organiz:", err);
-        res.status(500).json({ success: false, message: err });
-    }
-  });
+  try {
+    const data = await Organization.find({});
+    res.json({ success: true, result: data });
+  } catch (err) {
+    console.error("Error fetching organizations:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 
-  router.delete('/:id', async (req, res) => {
+// Delete
+router.delete('/:id', async (req, res) => {
   try {
     const organization = await Organization.findById(req.params.id);
+    if (!organization) return res.status(404).json({ message: 'Organization not found' });
 
-    if (!organization) {
-      return res.status(404).json({ message: 'Organization not found' });
-    }
-
-    await Organization.findByIdAndDelete(req.params.id); 
+    await Organization.findByIdAndDelete(req.params.id);
     res.json({ message: 'Organization deleted successfully' });
 
   } catch (err) {
@@ -99,6 +94,7 @@ router.get("/GetOrganizList", async (req, res) => {
   }
 });
 
+// Update
 router.put('/:id', upload.single('image'), async (req, res) => {
   try {
     const {
@@ -110,11 +106,8 @@ router.put('/:id', upload.single('image'), async (req, res) => {
       login_username,
       login_password,
       theme_color,
-      org_whatsapp_number,
-      org_call_number,
+      organization_type
     } = req.body;
-
-    const file = req.file;
 
     const updateData = {
       organization_title,
@@ -125,31 +118,19 @@ router.put('/:id', upload.single('image'), async (req, res) => {
       login_password,
       theme_color,
       domains: Array.isArray(domains) ? domains : domains?.split(','),
-      org_whatsapp_number: {
-        number: org_whatsapp_number,
-      },
-      org_call_number: {
-        number: org_call_number,
-      },
+      organization_type
     };
 
-    if (file) {
-      updateData.organization_logo = file.path;
+    if (req.file) {
+      updateData.organization_logo = req.file.path;
     }
 
-    const updatedOrg = await Organization.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    );
+    const updated = await Organization.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    if (!updated) return res.status(404).json({ message: 'Organization not found' });
 
-    if (!updatedOrg) {
-      return res.status(404).json({ message: 'Organization not found' });
-    }
-
-    res.json(updatedOrg);
+    res.json(updated);
   } catch (err) {
-    console.error('Error updating organization:', err);
+    console.error('Update error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
