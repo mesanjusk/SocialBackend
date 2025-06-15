@@ -158,6 +158,20 @@ router.put('/:id', upload.single('image'), async (req, res) => {
   }
 });
 
+router.get("/GetOrganizList", async (req, res) => {
+  try {
+    const data = await Organization.find({});
+    if (data.length) {
+      res.json({ success: true, result: data });
+    } else {
+      res.json({ success: false, message: "Organiz Not found" });
+    }
+  } catch (err) {
+    console.error("Error fetching organizations:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 
 
 module.exports = router;
