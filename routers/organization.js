@@ -76,4 +76,70 @@ router.post("/add", upload.single("image"), async (req, res) => {
   }
 });
 
+// ✅ Update Organization by ID
+router.put('/:id', upload.single('image'), async (req, res) => {
+  try {
+    const {
+      organization_title,
+      organization_whatsapp_number,
+      organization_call_number,
+      organization_whatsapp_message,
+      domains,
+      login_username,
+      login_password,
+      theme_color,
+      plan_type,
+      organization_type,
+      org_whatsapp_number,
+      org_call_number,
+    } = req.body;
+
+    if (!organization_title || !organization_call_number) {
+      return res.status(400).json({ message: 'Required fields missing' });
+    }
+
+    const updateData = {
+      organization_title,
+      organization_call_number,
+      organization_whatsapp_message,
+      login_username,
+      login_password,
+      theme_color,
+      organization_type,
+      plan_type: plan_type || 'free',
+      domains: domains?.split(',').map((d) => d.trim()).filter(Boolean),
+      org_whatsapp_number: org_whatsapp_number ? JSON.parse(org_whatsapp_number) : [],
+      org_call_number: org_call_number ? JSON.parse(org_call_number) : []
+    };
+
+    if (organization_whatsapp_number?.trim()) {
+      updateData.organization_whatsapp_number = organization_whatsapp_number;
+    } else {
+      updateData.organization_whatsapp_number = undefined;
+    }
+
+    if (req.file) {
+      updateData.organization_logo = req.file.path;
+    }
+
+    const updated = await Organization.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Organization not found' });
+    }
+
+    res.json({ success: true, message: 'Updated successfully', result: updated });
+  } catch (err) {
+    console.error('Error updating organization:', err);
+    if (err.code === 11000) {
+      return res.status(409).json({ message: 'Duplicate entry for unique field', duplicate: err.keyValue });
+    }
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
 module.exports = router;
