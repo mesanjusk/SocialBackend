@@ -77,4 +77,5 @@ router.get('/GetOrganizList', async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = mongoose.model('Organization', organizationSchema);
+
