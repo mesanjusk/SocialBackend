@@ -63,8 +63,8 @@ router.post("/add", upload.single("image"), async (req, res) => {
       org_call_number: org_call_number ? JSON.parse(org_call_number) : []
     });
 
-    // ✅ Only assign WhatsApp number if it exists (avoid duplicate null)
-    if (organization_whatsapp_number) {
+    // ✅ Only assign if not empty
+    if (organization_whatsapp_number?.trim()) {
       newOrg.organization_whatsapp_number = organization_whatsapp_number;
     }
 
@@ -76,7 +76,8 @@ router.post("/add", upload.single("image"), async (req, res) => {
   }
 });
 
-// ✅ Update Organization by ID
+
+// ✅ Update Organization by ID — allows clearing whatsapp number
 router.put('/:id', upload.single('image'), async (req, res) => {
   try {
     const {
@@ -112,16 +113,21 @@ router.put('/:id', upload.single('image'), async (req, res) => {
       org_call_number: org_call_number ? JSON.parse(org_call_number) : []
     };
 
-    if (organization_whatsapp_number?.trim()) {
-      updateData.organization_whatsapp_number = organization_whatsapp_number;
-    } else {
-      updateData.organization_whatsapp_number = undefined;
-    }
-
     if (req.file) {
       updateData.organization_logo = req.file.path;
     }
 
+    // ✅ Main logic: clear if empty, otherwise update
+    if (organization_whatsapp_number?.trim()) {
+      updateData.organization_whatsapp_number = organization_whatsapp_number;
+    } else {
+      // clear the field in MongoDB using $unset
+      await Organization.findByIdAndUpdate(req.params.id, {
+        $unset: { organization_whatsapp_number: "" }
+      });
+    }
+
+    // ✅ Then update other fields normally
     const updated = await Organization.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true,
@@ -140,6 +146,7 @@ router.put('/:id', upload.single('image'), async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 
 module.exports = router;
