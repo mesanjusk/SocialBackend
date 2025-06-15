@@ -9,6 +9,7 @@ const enquiryRoute = require('./routers/enquiryRoutes')
 const courseRoutes = require('./routers/courseRoutes');
 const admissionRoutes = require('./routers/admissionRoutes');
 const batchRoutes = require('./routers/batchRoutes');
+const orgRoutes = require('./routes/organizationRoutes');
 
 dotenv.config();
 const app = express();
@@ -31,6 +32,7 @@ app.use('/api/enquiry', enquiryRoute)
 app.use('/api/courses', courseRoutes);
 app.use('/api/admission', admissionRoutes);
 app.use('/api/batches', batchRoutes);
+app.use('/api/organization', orgRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
