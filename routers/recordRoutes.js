@@ -2,65 +2,66 @@ const express = require('express');
 const router = express.Router();
 const Record = require('../models/Record');
 
-// Get all admissions for a specific organization
+// Get records (enquiry/admission) for a specific organization
 router.get('/org/:organization_id', async (req, res) => {
   try {
     const { organization_id } = req.params;
-    const data = await Record.find({
-      type: 'admission',
-      organization_id
-    }).sort({ createdAt: -1 });
+    const { type } = req.query;
 
+    const filter = { organization_id };
+    if (type) filter.type = type;
+
+    const data = await Record.find(filter).sort({ createdAt: -1 });
     res.json(data);
   } catch (err) {
-    console.error('Fetch admissions failed:', err);
+    console.error('Fetch records failed:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Create new admission (from form or converted enquiry)
+// Create new record (enquiry or admission)
 router.post('/', async (req, res) => {
   try {
-    const { organization_id } = req.body;
-    if (!organization_id) {
-      return res.status(400).json({ error: 'organization_id is required' });
+    const { organization_id, type } = req.body;
+    if (!organization_id || !type) {
+      return res.status(400).json({ error: 'organization_id and type are required' });
     }
 
-    const newAdmission = new Record({ ...req.body, type: 'admission' });
-    await newAdmission.save();
+    const newRecord = new Record(req.body);
+    await newRecord.save();
 
     // Optional: mark related enquiry as converted
-    if (req.body._enquiryId) {
+    if (req.body._enquiryId && type === 'admission') {
       await Record.findByIdAndUpdate(req.body._enquiryId, {
         convertedToAdmission: true
       });
     }
 
-    res.json(newAdmission);
+    res.json(newRecord);
   } catch (err) {
-    console.error('Create admission failed:', err);
-    res.status(500).json({ error: 'Failed to save admission' });
+    console.error('Create record failed:', err);
+    res.status(500).json({ error: 'Failed to save record' });
   }
 });
 
-// Update admission
+// Update record
 router.put('/:id', async (req, res) => {
   try {
     const updated = await Record.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(updated);
   } catch (err) {
-    console.error('Update admission failed:', err);
+    console.error('Update record failed:', err);
     res.status(500).json({ error: 'Update failed' });
   }
 });
 
-// Delete admission
+// Delete record
 router.delete('/:id', async (req, res) => {
   try {
     await Record.findByIdAndDelete(req.params.id);
     res.json({ message: 'Deleted' });
   } catch (err) {
-    console.error('Delete admission failed:', err);
+    console.error('Delete record failed:', err);
     res.status(500).json({ error: 'Delete failed' });
   }
 });
