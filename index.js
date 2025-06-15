@@ -7,7 +7,7 @@ const uploadRoute = require('./uploadRoute');
 const organizeRoute = require('./routers/organization');
 const enquiryRoute = require('./routers/enquiryRoutes')
 const courseRoutes = require('./routers/courseRoutes');
-const admissionRoutes = require('./routers/admissionRoutes');
+const recordRoutes = require('./routers/recordRoutes');
 const batchRoutes = require('./routers/batchRoutes');
 const orgRoutes = require('./routers/organizationRoutes'); // ✅ correct path
 
@@ -31,7 +31,7 @@ app.use('/api/upload', uploadRoute);
 app.use('/api/organize', organizeRoute);
 app.use('/api/enquiry', enquiryRoute)
 app.use('/api/courses', courseRoutes);
-app.use('/api/admission', admissionRoutes);
+app.use('/api/record',recordRoutes);
 app.use('/api/batches', batchRoutes);
 app.use('/api/organization', orgRoutes);
 
