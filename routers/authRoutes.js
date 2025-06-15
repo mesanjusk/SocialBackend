@@ -4,99 +4,75 @@ const User = require('../models/User');
 
 const router = express.Router();
 
+// ➕ Register new user (by organization)
 router.post("/register", async (req, res) => {
-    const{name, password, mobile, type}=req.body
+  const { name, password, mobile, type, organization_id } = req.body;
 
-    try{
-        const check=await User.findOne({ mobile: mobile })
-       
-        if(check){
-            res.json("exist")
-        }
-        else{
-          const newUser = new User({
-            name,
-            password,
-            mobile,
-            type,
-            user_uuid: uuid()
-        });
-        await newUser.save(); 
-        res.json("notexist");
-        }
-
-    }
-    catch(e){
-      console.error("Error saving user:", e);
-      res.status(500).json("fail");
-    }
-  });
-
-router.post("/login", async (req, res) => {
-  const { name, password } = req.body;
+  if (!organization_id) {
+    return res.status(400).json({ success: false, message: "organization_id is required" });
+  }
 
   try {
-      const user = await User.findOne({ name });
+    const check = await User.findOne({ mobile });
 
-      if (!user) {
-          return res.json({ status: "notexist" });
-      }
+    if (check) {
+      return res.json("exist");
+    }
 
-      if (password === user.password) {
-          res.json({
-              status: "exist",
-              type: user.type,
-              mobile: user.mobile,
-          });
-      } else {
-          res.json({ status: "invalid", message: "Invalid credentials." });
-      }
+    const newUser = new User({
+      name,
+      password,
+      mobile,
+      type,
+      user_uuid: uuid(),
+      organization_id,
+    });
+
+    await newUser.save();
+    res.json("notexist");
+
   } catch (e) {
-      console.error("Error during login:", e);
-      res.json({ status: "fail" });
+    console.error("Error saving user:", e);
+    res.status(500).json("fail");
   }
 });
 
-router.get("/GetUserList", async (req, res) => {
-    try {
-      let data = await User.find({});
-  
-      if (data.length)
-        res.json({ success: true, result: data.filter((a) => a.name) });
-      else res.json({ success: false, message: "User Not found" });
-    } catch (err) {
-      console.error("Error fetching users:", err);
-        res.status(500).json({ success: false, message: err });
-    }
-  });
-
-  router.get('/:id', async (req, res) => {
-  const { id } = req.params; 
+// 🧾 Get all users for one organization
+router.get("/GetUserList/:organization_id", async (req, res) => {
+  const { organization_id } = req.params;
 
   try {
-      const user = await User.findById(id);  
+    const users = await User.find({ organization_id });
 
-      if (!user) {
-          return res.status(404).json({
-              success: false,
-              message: 'User not found',
-          });
-      }
-
-      res.status(200).json({
-          success: true,
-          result: user,
-      });
-  } catch (error) {
-      console.error('Error fetching user:', error);
-      res.status(500).json({
-          success: false,
-          message: 'Error fetching user',
-          error: error.message,
-      });
+    if (users.length)
+      res.json({ success: true, result: users });
+    else
+      res.json({ success: false, message: "No users found" });
+  } catch (err) {
+    console.error("Error fetching users:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
+// 📄 Get single user by MongoDB ID
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.status(200).json({ success: true, result: user });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ success: false, message: 'Error fetching user', error: error.message });
+  }
+});
+
+// ❌ Delete user
 router.delete('/:id', async (req, res) => {
   try {
     const users = await User.findById(req.params.id);
@@ -105,7 +81,7 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    await User.findByIdAndDelete(req.params.id); 
+    await User.findByIdAndDelete(req.params.id);
     res.json({ message: 'User deleted successfully' });
 
   } catch (err) {
@@ -114,6 +90,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// ✏️ Update user
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
   const { name, mobile, type, password } = req.body;
@@ -126,24 +103,14 @@ router.put("/:id", async (req, res) => {
     );
 
     if (!updatedUser) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    res.status(200).json({
-      success: true,
-      message: 'User updated successfully',
-      result: updatedUser,
-    });
+    res.status(200).json({ success: true, message: 'User updated successfully', result: updatedUser });
+
   } catch (error) {
     console.error('Error updating user:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error updating user',
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: 'Error updating user', error: error.message });
   }
 });
 
