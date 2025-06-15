@@ -1,87 +1,72 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const Organization = require('../models/Organization');
 
-// Multer setup
+// Multer setup for optional image upload
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: (req, file, cb) => {
     const dir = './uploads';
     if (!fs.existsSync(dir)) fs.mkdirSync(dir);
     cb(null, dir);
   },
-  filename: function (req, file, cb) {
+  filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
   }
 });
 const upload = multer({ storage });
 
-// Add new organization
+// POST /api/organize/add – Signup (minimal fields)
 router.post('/add', upload.single('image'), async (req, res) => {
   try {
     const {
       organization_title,
-      organization_whatsapp_number,
       organization_call_number,
-      organization_whatsapp_message,
-      login_username,
-      login_password,
-      theme_color,
-      domains,
-      plan_type,
-      created_by,
       organization_type,
-      center_code,
-      org_whatsapp_number,
-      org_call_number
+      center_code
     } = req.body;
 
-    const organization_logo = req.file ? `uploads/${req.file.filename}` : '';
+    if (!organization_title || !organization_call_number || !organization_type || !center_code) {
+      return res.status(400).send('missing_fields');
+    }
 
-    // Check if organization already exists by center_code
+    // Check uniqueness of center_code
     const existing = await Organization.findOne({ center_code });
     if (existing) return res.send('exist');
 
-    // Parse nested number lists (expected as JSON strings from frontend)
-    const parsedWhatsappNumbers = org_whatsapp_number
-      ? JSON.parse(org_whatsapp_number)
-      : [];
-
-    const parsedCallNumbers = org_call_number
-      ? JSON.parse(org_call_number)
-      : [];
+    const organization_logo = req.file ? `uploads/${req.file.filename}` : '';
 
     const newOrg = new Organization({
       organization_uuid: uuidv4(),
       center_code,
       organization_title,
-      organization_whatsapp_number,
       organization_call_number,
-      organization_whatsapp_message,
-      login_username,
-      login_password,
-      theme_color,
-      domains: domains.split(',').map(d => d.trim()),
-      plan_type,
-      created_by,
       organization_type,
+      login_username: center_code,
+      login_password: center_code,
       organization_logo,
-      org_whatsapp_number: parsedWhatsappNumbers,
-      org_call_number: parsedCallNumbers
+      plan_type: 'free',
+      created_by: 'self-signup',
+      created_at: new Date(),
+      domains: [],
+      organization_whatsapp_number: null,
+      organization_whatsapp_message: '',
+      theme_color: '',
+      org_whatsapp_number: [],
+      org_call_number: []
     });
 
     await newOrg.save();
     res.send('notexist');
   } catch (err) {
-    console.error('[Organization Add Error]', err);
+    console.error('[Signup Add Error]', err);
     res.status(500).send('server_error');
   }
 });
 
-// Get all organizations
+// GET /api/organize/GetOrganizList
 router.get('/GetOrganizList', async (req, res) => {
   try {
     const result = await Organization.find().sort({ created_at: -1 });
