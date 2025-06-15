@@ -20,10 +20,8 @@ const storage = new CloudinaryStorage({
 });
 
 const upload = multer({ storage });
-
 const router = express.Router();
 
-// ✅ Register a new Organization (with logo support)
 router.post("/add", upload.single("image"), async (req, res) => {
   try {
     const {
@@ -31,8 +29,7 @@ router.post("/add", upload.single("image"), async (req, res) => {
       organization_title,
       organization_type,
       organization_call_number,
-      organization_whatsapp_number,
-      organization_whatsapp_message
+      organization_whatsapp_message // Optional: still allowed
     } = req.body;
 
     if (!center_code || !organization_title || !organization_call_number || !organization_type) {
@@ -41,7 +38,7 @@ router.post("/add", upload.single("image"), async (req, res) => {
 
     const exists = await Organization.findOne({ center_code });
     if (exists) {
-      return res.json("exist");
+      return res.json({ message: "exist" });
     }
 
     const newOrg = new Organization({
@@ -50,7 +47,6 @@ router.post("/add", upload.single("image"), async (req, res) => {
       organization_title,
       organization_type,
       organization_call_number: Number(organization_call_number),
-      organization_whatsapp_number: organization_whatsapp_number ? Number(organization_whatsapp_number) : undefined,
       organization_whatsapp_message,
       login_username: center_code,
       login_password: center_code,
