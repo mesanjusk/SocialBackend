@@ -2,8 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Record = require('../models/Record');
 
-// Get all enquiries for a specific organization (not converted)
-// Get all enquiries for a specific organization
+// 🔹 Get all enquiries for a specific organization
 router.get('/org/:organization_id', async (req, res) => {
   try {
     const { organization_id } = req.params;
@@ -19,8 +18,7 @@ router.get('/org/:organization_id', async (req, res) => {
   }
 });
 
-
-// Create new enquiry
+// 🔹 Create new enquiry
 router.post('/', async (req, res) => {
   try {
     const { organization_id } = req.body;
@@ -38,7 +36,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update enquiry
+// 🔹 Update enquiry
 router.put('/:id', async (req, res) => {
   try {
     const updated = await Record.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -49,7 +47,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete enquiry
+// 🔹 Delete enquiry
 router.delete('/:id', async (req, res) => {
   try {
     await Record.findByIdAndDelete(req.params.id);
