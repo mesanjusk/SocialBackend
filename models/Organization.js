@@ -25,7 +25,7 @@ const organizationSchema = new mongoose.Schema({
   },
   organization_title: String,
   organization_type: String,
-  organization_whatsapp_number: { type: Number, unique: true, sparse: true },
+  // 🚫 Removed organization_whatsapp_number
   organization_call_number: { type: Number, unique: true },
   organization_whatsapp_message: String,
   login_password: String,
