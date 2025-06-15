@@ -22,7 +22,6 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 const router = express.Router();
 
-// ✅ Add New Organization
 router.post("/add", upload.single("image"), async (req, res) => {
   try {
     const {
@@ -41,12 +40,21 @@ router.post("/add", upload.single("image"), async (req, res) => {
       org_call_number
     } = req.body;
 
-    // ✅ Prevent duplicate center code
     const exists = await Organization.findOne({ center_code });
     if (exists) return res.json("exist");
 
-    // ✅ Prepare organization object
-    const newOrg = new Organization({
+    // Parse array fields with safe fallback
+    let parsedWhatsapp = [];
+    let parsedCall = [];
+    try {
+      parsedWhatsapp = org_whatsapp_number ? JSON.parse(org_whatsapp_number) : [];
+      parsedCall = org_call_number ? JSON.parse(org_call_number) : [];
+    } catch (err) {
+      return res.status(400).json({ message: 'Invalid JSON in whatsapp or call numbers' });
+    }
+
+    // Build new org object with only provided fields
+    const newOrgData = {
       organization_uuid: uuid(),
       center_code,
       organization_title,
@@ -59,22 +67,25 @@ router.post("/add", upload.single("image"), async (req, res) => {
       domains: domains?.split(',').map(d => d.trim()).filter(Boolean),
       plan_type: plan_type || 'free',
       organization_logo: req.file ? req.file.path : null,
-      org_whatsapp_number: org_whatsapp_number ? JSON.parse(org_whatsapp_number) : [],
-      org_call_number: org_call_number ? JSON.parse(org_call_number) : []
-    });
+      org_whatsapp_number: parsedWhatsapp,
+      org_call_number: parsedCall
+    };
 
-    // ✅ Only assign if not empty
+    // ✅ Only assign whatsapp number if valid (avoid null duplication error)
     if (organization_whatsapp_number?.trim()) {
-      newOrg.organization_whatsapp_number = organization_whatsapp_number;
+      newOrgData.organization_whatsapp_number = organization_whatsapp_number;
     }
 
+    const newOrg = new Organization(newOrgData);
     await newOrg.save();
+
     res.json("notexist");
   } catch (err) {
     console.error("Error adding organization:", err);
     res.status(500).json("fail");
   }
 });
+
 
 
 // ✅ Update Organization by ID — allows clearing whatsapp number
