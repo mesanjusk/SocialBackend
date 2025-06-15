@@ -3,7 +3,13 @@ const { v4: uuidv4 } = require('uuid');
 
 const recordSchema = new mongoose.Schema({
   uuid: { type: String, default: uuidv4 },
+
+  // 'enquiry' or 'admission'
   type: { type: String, enum: ['enquiry', 'admission'], required: true },
+
+  organization_id: { type: String, required: true },
+  convertedToAdmission: { type: Boolean, default: false },
+
   branchCode: String,
   enquiryDate: Date,
   admissionDate: Date,
@@ -32,6 +38,8 @@ const recordSchema = new mongoose.Schema({
   feePaid: Number,
   paidBy: String,
   balance: Number,
+
+  createdBy: String // optional: track who added the record (user_uuid or name)
 }, { timestamps: true });
 
 module.exports = mongoose.model('Record', recordSchema);
