@@ -3,13 +3,13 @@ const router = express.Router();
 const Record = require('../models/Record');
 
 // Get all enquiries for a specific organization (not converted)
+// Get all enquiries for a specific organization
 router.get('/org/:organization_id', async (req, res) => {
   try {
     const { organization_id } = req.params;
     const data = await Record.find({
       type: 'enquiry',
-      organization_id,
-      convertedToAdmission: false
+      organization_id
     }).sort({ createdAt: -1 });
 
     res.json(data);
@@ -18,6 +18,7 @@ router.get('/org/:organization_id', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 // Create new enquiry
 router.post('/', async (req, res) => {
