@@ -22,6 +22,7 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 const router = express.Router();
 
+// ➕ ADD ORGANIZATION (SIGNUP)
 router.post("/add", upload.single("image"), async (req, res) => {
   try {
     const {
@@ -58,6 +59,32 @@ router.post("/add", upload.single("image"), async (req, res) => {
     }
     console.error("Signup error:", err);
     res.status(500).json({ message: "Server error during signup" });
+  }
+});
+
+// 🔐 LOGIN ORGANIZATION
+router.post('/login', async (req, res) => {
+  const { center_code, login_password } = req.body;
+
+  if (!center_code || !login_password) {
+    return res.status(400).json({ message: 'Missing credentials' });
+  }
+
+  try {
+    const org = await Organization.findOne({ center_code, login_password });
+
+    if (org) {
+      return res.json({
+        message: 'success',
+        organization_id: org.organization_uuid,
+        organization_title: org.organization_title,
+      });
+    } else {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+  } catch (err) {
+    console.error('Login error:', err);
+    return res.status(500).json({ message: 'Server error during login' });
   }
 });
 
