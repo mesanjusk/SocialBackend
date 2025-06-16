@@ -28,25 +28,22 @@ router.post("/add", upload.single("image"), async (req, res) => {
       center_code,
       organization_title,
       organization_type,
-      
-
+      organization_call_number,
     } = req.body;
 
-    if (!center_code || !organization_title  || !organization_type) {
-      return res.status(400).json({ success: false, message: "Missing required fields" });
+    if (!center_code || !organization_title || !organization_type || !organization_call_number) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
-    const exists = await Organization.findOne({ center_code });
-    if (exists) {
-      return res.json({ message: "exist" });
-    }
+    const existingCenter = await Organization.findOne({ center_code });
+    if (existingCenter) return res.json({ message: "exist" });
 
     const newOrg = new Organization({
       organization_uuid: uuid(),
       center_code,
       organization_title,
       organization_type,
-
+      organization_call_number,
       login_username: center_code,
       login_password: center_code,
       plan_type: "free",
@@ -56,8 +53,11 @@ router.post("/add", upload.single("image"), async (req, res) => {
     await newOrg.save();
     res.json({ message: "notexist", organization_id: newOrg.organization_uuid });
   } catch (err) {
+    if (err.code === 11000 && err.keyPattern?.organization_call_number) {
+      return res.status(400).json({ message: 'duplicate_call_number' });
+    }
     console.error("Signup error:", err);
-    res.status(500).json({ error: "Server error during signup" });
+    res.status(500).json({ message: "Server error during signup" });
   }
 });
 
