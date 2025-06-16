@@ -4,12 +4,12 @@ const { v4: uuidv4 } = require('uuid');
 const orgWhatsappNumberSchema = new mongoose.Schema({
   message: { type: String, required: true },
   tag: { type: String, required: true },
-  mobile: { type: Number, required: true },
+
 });
 
 const orgCallNumberSchema = new mongoose.Schema({
   tag: { type: String, required: true },
-  mobile: { type: Number, required: true },
+
 });
 
 const organizationSchema = new mongoose.Schema({
@@ -26,8 +26,8 @@ const organizationSchema = new mongoose.Schema({
   organization_title: String,
   organization_type: String,
   // 🚫 Removed organization_whatsapp_number
-  organization_call_number: { type: Number, unique: true },
-  organization_whatsapp_message: String,
+
+
   login_password: String,
   login_username: String,
   organization_logo: String,
@@ -44,7 +44,7 @@ const organizationSchema = new mongoose.Schema({
   },
   domains: [String],
   
-  org_call_number: [orgCallNumberSchema],
+
 });
 
 module.exports = mongoose.model('Organization', organizationSchema);
