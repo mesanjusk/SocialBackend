@@ -43,7 +43,7 @@ const organizationSchema = new mongoose.Schema({
     default: Date.now,
   },
   domains: [String],
-  org_whatsapp_number: [orgWhatsappNumberSchema],
+  
   org_call_number: [orgCallNumberSchema],
 });
 
