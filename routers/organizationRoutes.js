@@ -48,11 +48,19 @@ router.post("/add", upload.single("image"), async (req, res) => {
       login_username: center_code,
       login_password: center_code,
       plan_type: "free",
+      theme_color: "#10B981", // default green if not set
       organization_logo: req.file?.path || "",
     });
 
     await newOrg.save();
-    res.json({ message: "notexist", organization_id: newOrg.organization_uuid });
+
+    return res.json({
+      message: "success",
+      organization_id: newOrg.organization_uuid,
+      organization_title: newOrg.organization_title,
+      center_code: newOrg.center_code,
+      theme_color: newOrg.theme_color || "#10B981"
+    });
   } catch (err) {
     if (err.code === 11000 && err.keyPattern?.organization_call_number) {
       return res.status(400).json({ message: 'duplicate_call_number' });
@@ -78,6 +86,8 @@ router.post('/login', async (req, res) => {
         message: 'success',
         organization_id: org.organization_uuid,
         organization_title: org.organization_title,
+        center_code: org.center_code,
+        theme_color: org.theme_color || "#10B981"
       });
     } else {
       return res.status(401).json({ message: 'Invalid credentials' });
