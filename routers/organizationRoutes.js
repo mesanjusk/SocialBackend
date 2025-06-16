@@ -28,11 +28,11 @@ router.post("/add", upload.single("image"), async (req, res) => {
       center_code,
       organization_title,
       organization_type,
-      organization_call_number,
+      
 
     } = req.body;
 
-    if (!center_code || !organization_title || !organization_call_number || !organization_type) {
+    if (!center_code || !organization_title  || !organization_type) {
       return res.status(400).json({ success: false, message: "Missing required fields" });
     }
 
@@ -46,8 +46,7 @@ router.post("/add", upload.single("image"), async (req, res) => {
       center_code,
       organization_title,
       organization_type,
-      organization_call_number: Number(organization_call_number),
-      organization_whatsapp_message,
+
       login_username: center_code,
       login_password: center_code,
       plan_type: "free",
