@@ -29,7 +29,7 @@ router.post("/add", upload.single("image"), async (req, res) => {
       organization_title,
       organization_type,
       organization_call_number,
-      organization_whatsapp_message // Optional: still allowed
+
     } = req.body;
 
     if (!center_code || !organization_title || !organization_call_number || !organization_type) {
