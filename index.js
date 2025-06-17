@@ -56,7 +56,7 @@ app.use('/api/batches', batchRoutes);
 app.use('/api/org-categories', orgCategoryRoutes);
 app.use('/api/education', educationRoutes);
 app.use('/api/exams', examRoutes);
-app.use('/api/paymentmodes', paymentModeRoutes);
+app.use('/api/paymentmode', paymentModeRoutes);
 
 // 404 fallback
 app.use((req, res) => {
