@@ -2,6 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const helmet = require('helmet');
+const morgan = require('morgan');
 
 // Load environment variables
 dotenv.config();
@@ -9,17 +11,19 @@ dotenv.config();
 // Import routes
 const authRoutes = require('./routers/authRoutes');
 const uploadRoute = require('./uploadRoute');
-const organizeRoute = require('./routers/organization'); // organization create
+const organizeRoute = require('./routers/organization');
 const enquiryRoute = require('./routers/enquiryRoutes');
 const courseRoutes = require('./routers/courseRoutes');
 const recordRoutes = require('./routers/recordRoutes');
 const batchRoutes = require('./routers/batchRoutes');
-const orgRoutes = require('./routers/organizationRoutes'); // login & fetch organization
+const orgRoutes = require('./routers/organizationRoutes');
 
 // Initialize express app
 const app = express();
 app.use(cors());
-app.use(express.json()); // Handle JSON payloads
+app.use(express.json());
+app.use(helmet());
+app.use(morgan('dev'));
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
@@ -31,20 +35,25 @@ mongoose.connect(process.env.MONGO_URI, {
   console.error('❌ MongoDB connection error:', err.message);
 });
 
-// Health check route
+// Health check
 app.get('/', (req, res) => {
   res.send('✅ API is running...');
 });
 
-// API routes
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoute);
-app.use('/api/organize', organizeRoute);          // Add/Signup organization
-app.use('/api/organization', orgRoutes);          // Login/check organization
+app.use('/api/organize', organizeRoute);
+app.use('/api/organization', orgRoutes);
 app.use('/api/enquiry', enquiryRoute);
 app.use('/api/courses', courseRoutes);
-app.use('/api/record', recordRoutes);             // Admissions & converted enquiries
+app.use('/api/record', recordRoutes);
 app.use('/api/batches', batchRoutes);
+
+// 404 fallback
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route not found' });
+});
 
 // Start server
 const PORT = process.env.PORT || 5000;
