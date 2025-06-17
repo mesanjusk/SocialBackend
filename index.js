@@ -18,6 +18,7 @@ const recordRoutes = require('./routers/recordRoutes');
 const batchRoutes = require('./routers/batchRoutes');
 const orgRoutes = require('./routers/organizationRoutes');
 const orgCategoryRoutes = require('./routers/orgCategoryRoutes');
+const educationRoutes = require('./routers/educationRoutes');
 
 // Initialize express app
 const app = express();
@@ -51,6 +52,7 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/record', recordRoutes);
 app.use('/api/batches', batchRoutes);
 app.use('/api/org-categories', orgCategoryRoutes);
+app.use('/api/education', educationRoutes);
 
 // 404 fallback
 app.use((req, res) => {
