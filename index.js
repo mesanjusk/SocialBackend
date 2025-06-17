@@ -20,6 +20,7 @@ const orgRoutes = require('./routers/organizationRoutes');
 const orgCategoryRoutes = require('./routers/orgCategoryRoutes');
 const educationRoutes = require('./routers/educationRoutes');
 const examRoutes = require('./routers/examRoutes');
+const paymentModeRoutes = require('./routers/paymentModeRoutes');
 
 // Initialize express app
 const app = express();
@@ -55,6 +56,7 @@ app.use('/api/batches', batchRoutes);
 app.use('/api/org-categories', orgCategoryRoutes);
 app.use('/api/education', educationRoutes);
 app.use('/api/exams', examRoutes);
+app.use('/api/payment-modes', paymentModeRoutes);
 
 // 404 fallback
 app.use((req, res) => {
