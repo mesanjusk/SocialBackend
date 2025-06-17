@@ -2,7 +2,7 @@ const express = require('express');
 const Course = require('../models/Course');
 const router = express.Router();
 
-// GET courses (optionally filter by organization_id)
+// ✅ GET courses (optionally filter by organization_id)
 router.get('/', async (req, res) => {
   try {
     const { organization_id } = req.query;
@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST new course
+// ✅ POST new course
 router.post('/', async (req, res) => {
   try {
     const { name, organization_id } = req.body;
@@ -32,7 +32,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT update course
+// ✅ PUT update course
 router.put('/:id', async (req, res) => {
   try {
     const updated = await Course.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -43,7 +43,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE course
+// ✅ DELETE course
 router.delete('/:id', async (req, res) => {
   try {
     await Course.findByIdAndDelete(req.params.id);
