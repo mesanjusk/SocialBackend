@@ -22,156 +22,80 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 const router = express.Router();
 
+// ➕ SIGNUP ORGANIZATION
 router.post("/add", upload.single("image"), async (req, res) => {
   try {
     const {
       center_code,
       organization_title,
       organization_type,
-      organization_call_number,
-      organization_whatsapp_number,
-      organization_whatsapp_message,
-      login_username,
-      login_password,
-      theme_color,
-      domains,
-      plan_type,
-      org_whatsapp_number,
-      org_call_number
+      organization_call_number
     } = req.body;
 
-    const exists = await Organization.findOne({ center_code });
-    if (exists) return res.json("exist");
-
-    // Parse array fields with safe fallback
-    let parsedWhatsapp = [];
-    let parsedCall = [];
-    try {
-      parsedWhatsapp = org_whatsapp_number ? JSON.parse(org_whatsapp_number) : [];
-      parsedCall = org_call_number ? JSON.parse(org_call_number) : [];
-    } catch (err) {
-      return res.status(400).json({ message: 'Invalid JSON in whatsapp or call numbers' });
+    if (!center_code || !organization_title || !organization_type || !organization_call_number) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Build new org object with only provided fields
-    const newOrgData = {
+    const exists = await Organization.findOne({ center_code });
+    if (exists) return res.json({ message: "exist" });
+
+    const newOrg = new Organization({
       organization_uuid: uuid(),
       center_code,
       organization_title,
       organization_type,
       organization_call_number,
-      organization_whatsapp_message,
-      login_username: login_username || center_code,
-      login_password: login_password || center_code,
-      theme_color,
-      domains: domains?.split(',').map(d => d.trim()).filter(Boolean),
-      plan_type: plan_type || 'free',
-      organization_logo: req.file ? req.file.path : null,
-      org_whatsapp_number: parsedWhatsapp,
-      org_call_number: parsedCall
-    };
-
-    // ✅ Only assign whatsapp number if valid (avoid null duplication error)
-    if (organization_whatsapp_number?.trim()) {
-      newOrgData.organization_whatsapp_number = organization_whatsapp_number;
-    }
-
-    const newOrg = new Organization(newOrgData);
-    await newOrg.save();
-
-    res.json("notexist");
-  } catch (err) {
-    console.error("Error adding organization:", err);
-    res.status(500).json("fail");
-  }
-});
-
-
-
-// ✅ Update Organization by ID — allows clearing whatsapp number
-router.put('/:id', upload.single('image'), async (req, res) => {
-  try {
-    const {
-      organization_title,
-      organization_whatsapp_number,
-      organization_call_number,
-      organization_whatsapp_message,
-      domains,
-      login_username,
-      login_password,
-      theme_color,
-      plan_type,
-      organization_type,
-      org_whatsapp_number,
-      org_call_number,
-    } = req.body;
-
-    if (!organization_title || !organization_call_number) {
-      return res.status(400).json({ message: 'Required fields missing' });
-    }
-
-    const updateData = {
-      organization_title,
-      organization_call_number,
-      organization_whatsapp_message,
-      login_username,
-      login_password,
-      theme_color,
-      organization_type,
-      plan_type: plan_type || 'free',
-      domains: domains?.split(',').map((d) => d.trim()).filter(Boolean),
-      org_whatsapp_number: org_whatsapp_number ? JSON.parse(org_whatsapp_number) : [],
-      org_call_number: org_call_number ? JSON.parse(org_call_number) : []
-    };
-
-    if (req.file) {
-      updateData.organization_logo = req.file.path;
-    }
-
-    // ✅ Main logic: clear if empty, otherwise update
-    if (organization_whatsapp_number?.trim()) {
-      updateData.organization_whatsapp_number = organization_whatsapp_number;
-    } else {
-      // clear the field in MongoDB using $unset
-      await Organization.findByIdAndUpdate(req.params.id, {
-        $unset: { organization_whatsapp_number: "" }
-      });
-    }
-
-    // ✅ Then update other fields normally
-    const updated = await Organization.findByIdAndUpdate(req.params.id, updateData, {
-      new: true,
-      runValidators: true,
+      login_username: center_code,
+      login_password: center_code,
+      plan_type: "free",
+      theme_color: "#10B981",
+      organization_logo: req.file?.path || null,
     });
 
-    if (!updated) {
-      return res.status(404).json({ message: 'Organization not found' });
-    }
+    await newOrg.save();
 
-    res.json({ success: true, message: 'Updated successfully', result: updated });
+    res.json({
+      message: "success",
+      organization_id: newOrg.organization_uuid,
+      organization_title: newOrg.organization_title,
+      center_code: newOrg.center_code,
+      theme_color: newOrg.theme_color
+    });
   } catch (err) {
-    console.error('Error updating organization:', err);
-    if (err.code === 11000) {
-      return res.status(409).json({ message: 'Duplicate entry for unique field', duplicate: err.keyValue });
+    if (err.code === 11000 && err.keyPattern?.organization_call_number) {
+      return res.status(400).json({ message: 'duplicate_call_number' });
     }
-    res.status(500).json({ message: 'Server error' });
+    console.error("Signup error:", err);
+    res.status(500).json({ message: "Server error during signup" });
   }
 });
 
-router.get("/GetOrganizList", async (req, res) => {
+// 🔐 LOGIN ORGANIZATION
+router.post("/login", async (req, res) => {
+  const { center_code, login_password } = req.body;
+
+  if (!center_code || !login_password) {
+    return res.status(400).json({ message: "Missing credentials" });
+  }
+
   try {
-    const data = await Organization.find({});
-    if (data.length) {
-      res.json({ success: true, result: data });
+    const org = await Organization.findOne({ center_code, login_password });
+
+    if (org) {
+      return res.json({
+        message: "success",
+        organization_id: org.organization_uuid,
+        organization_title: org.organization_title,
+        center_code: org.center_code,
+        theme_color: org.theme_color
+      });
     } else {
-      res.json({ success: false, message: "Organiz Not found" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
   } catch (err) {
-    console.error("Error fetching organizations:", err);
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Login error:", err);
+    return res.status(500).json({ message: "Server error during login" });
   }
 });
-
-
 
 module.exports = router;
