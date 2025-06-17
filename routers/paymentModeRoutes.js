@@ -13,6 +13,18 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET by UUID
+router.get('/uuid/:uuid', async (req, res) => {
+  try {
+    const entry = await PaymentMode.findOne({ uuid: req.params.uuid }).lean();
+    if (!entry) return res.status(404).json({ error: 'Payment mode not found' });
+    res.status(200).json(entry);
+  } catch (err) {
+    console.error('❌ Failed to fetch by UUID:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // POST new
 router.post('/', async (req, res) => {
   try {
