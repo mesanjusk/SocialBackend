@@ -2,53 +2,60 @@ const express = require('express');
 const router = express.Router();
 const Batch = require('../models/Batch');
 
-// GET batches (optionally filter by organization_id)
+// 📥 GET all batches (optionally filtered by organization_id)
 router.get('/', async (req, res) => {
   try {
     const { organization_id } = req.query;
     const query = organization_id ? { organization_id } : {};
-    const data = await Batch.find(query);
-    res.json(data);
+    const batches = await Batch.find(query).lean();
+    res.status(200).json(batches);
   } catch (err) {
-    console.error('Failed to fetch batches:', err);
+    console.error('❌ Failed to fetch batches:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// POST new batch
+// ➕ POST new batch
 router.post('/', async (req, res) => {
   try {
     const { organization_id, name, timing } = req.body;
     if (!organization_id || !name) {
       return res.status(400).json({ error: 'organization_id and name are required' });
     }
-    const batch = new Batch(req.body);
-    await batch.save();
-    res.status(201).json(batch);
+
+    const newBatch = new Batch({ organization_id, name, timing });
+    await newBatch.save();
+    res.status(201).json(newBatch);
   } catch (err) {
-    console.error('Failed to create batch:', err);
+    console.error('❌ Failed to create batch:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// PUT update batch
+// ✏️ PUT update batch
 router.put('/:id', async (req, res) => {
   try {
     const updated = await Batch.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(updated);
+    if (!updated) {
+      return res.status(404).json({ error: 'Batch not found' });
+    }
+    res.status(200).json(updated);
   } catch (err) {
-    console.error('Failed to update batch:', err);
+    console.error('❌ Failed to update batch:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// DELETE batch
+// ❌ DELETE batch
 router.delete('/:id', async (req, res) => {
   try {
-    await Batch.findByIdAndDelete(req.params.id);
-    res.json({ success: true });
+    const deleted = await Batch.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Batch not found' });
+    }
+    res.status(200).json({ success: true, message: 'Batch deleted' });
   } catch (err) {
-    console.error('Failed to delete batch:', err);
+    console.error('❌ Failed to delete batch:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
