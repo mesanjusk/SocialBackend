@@ -1,5 +1,4 @@
 const express = require('express');
-const { v4: uuid } = require('uuid');
 const Organization = require('../models/Organization');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
@@ -15,86 +14,71 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: 'organization',
-    allowed_formats: ['jpg', 'png', 'jpeg'],
-  },
+    allowed_formats: ['jpg', 'png', 'jpeg']
+  }
 });
 
 const upload = multer({ storage });
 const router = express.Router();
 
-// ➕ ADD ORGANIZATION (SIGNUP)
-router.post("/add", upload.single("image"), async (req, res) => {
+// 🔄 UPDATE ORGANIZATION
+router.put('/:id', upload.single('image'), async (req, res) => {
   try {
     const {
-      center_code,
       organization_title,
-      organization_type,
       organization_call_number,
+      organization_whatsapp_number,
+      organization_whatsapp_message,
+      domains,
+      login_username,
+      login_password,
+      theme_color,
+      plan_type,
+      organization_type
     } = req.body;
 
-    if (!center_code || !organization_title || !organization_type || !organization_call_number) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    const existingCenter = await Organization.findOne({ center_code });
-    if (existingCenter) return res.json({ message: "exist" });
-
-    const newOrg = new Organization({
-      organization_uuid: uuid(),
-      center_code,
+    const updateData = {
       organization_title,
-      organization_type,
       organization_call_number,
-      login_username: center_code,
-      login_password: center_code,
-      plan_type: "free",
-      theme_color: "#10B981", // default green if not set
-      organization_logo: req.file?.path || "",
+      organization_whatsapp_number,
+      organization_whatsapp_message,
+      login_username,
+      login_password,
+      theme_color,
+      organization_type,
+      plan_type: plan_type || 'free',
+      domains: domains?.split(',').map(d => d.trim()).filter(Boolean),
+    };
+
+    if (req.file) updateData.organization_logo = req.file.path;
+
+    const updated = await Organization.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+      runValidators: true
     });
 
-    await newOrg.save();
-
-    return res.json({
-      message: "success",
-      organization_id: newOrg.organization_uuid,
-      organization_title: newOrg.organization_title,
-      center_code: newOrg.center_code,
-      theme_color: newOrg.theme_color || "#10B981"
-    });
-  } catch (err) {
-    if (err.code === 11000 && err.keyPattern?.organization_call_number) {
-      return res.status(400).json({ message: 'duplicate_call_number' });
+    if (!updated) {
+      return res.status(404).json({ message: "Organization not found" });
     }
-    console.error("Signup error:", err);
-    res.status(500).json({ message: "Server error during signup" });
+
+    res.json({ success: true, message: "Updated successfully", result: updated });
+  } catch (err) {
+    console.error("Update error:", err);
+    if (err.code === 11000) {
+      return res.status(409).json({ message: "Duplicate field", duplicate: err.keyValue });
+    }
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-// 🔐 LOGIN ORGANIZATION
-router.post('/login', async (req, res) => {
-  const { center_code, login_password } = req.body;
-
-  if (!center_code || !login_password) {
-    return res.status(400).json({ message: 'Missing credentials' });
-  }
-
+// 📥 GET ALL ORGANIZATIONS (for Admin panel)
+router.get('/GetOrganizList', async (req, res) => {
   try {
-    const org = await Organization.findOne({ center_code, login_password });
-
-    if (org) {
-      return res.json({
-        message: 'success',
-        organization_id: org.organization_uuid,
-        organization_title: org.organization_title,
-        center_code: org.center_code,
-        theme_color: org.theme_color || "#10B981"
-      });
-    } else {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+    const data = await Organization.find().sort({ createdAt: -1 });
+    res.json({ success: true, result: data });
   } catch (err) {
-    console.error('Login error:', err);
-    return res.status(500).json({ message: 'Server error during login' });
+    console.error("Fetch error:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
