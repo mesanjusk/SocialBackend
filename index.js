@@ -11,7 +11,8 @@ dotenv.config();
 // Import routes
 const authRoutes = require('./routers/authRoutes');
 const uploadRoute = require('./uploadRoute');
-const organizeRoute = require('./routers/organization');
+const organizeRoute = require('./routers/organize'); // ✅ Corrected filename
+
 const enquiryRoute = require('./routers/enquiryRoutes');
 const courseRoutes = require('./routers/courseRoutes');
 const recordRoutes = require('./routers/recordRoutes');
