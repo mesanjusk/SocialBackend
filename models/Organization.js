@@ -12,28 +12,48 @@ const organizationSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  organization_title: String,
-  organization_type: String,
+  organization_title: {
+    type: String,
+    required: true,
+  },
+  organization_type: {
+    type: String,
+    required: true,
+  },
   organization_call_number: {
     type: Number,
     required: true,
     unique: true,
   },
-  login_password: String,
-  login_username: String,
-  organization_logo: String,
-  theme_color: String,
+  mobile_number: {
+    type: String,
+    required: false, // optional; user-level login uses this
+  },
+  organization_logo: {
+    type: String,
+    default: '',
+  },
+  theme_color: {
+    type: String,
+    default: '#10B981',
+  },
   plan_type: {
     type: String,
     enum: ['free', 'paid'],
     default: 'free',
   },
-  created_by: String,
+  created_by: {
+    type: String,
+    default: 'system',
+  },
   created_at: {
     type: Date,
     default: Date.now,
   },
-  domains: [String],
+  domains: {
+    type: [String],
+    default: [],
+  }
 });
 
 module.exports = mongoose.model('Organization', organizationSchema);
