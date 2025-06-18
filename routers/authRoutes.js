@@ -1,4 +1,3 @@
-// authRoutes.js
 const express = require('express');
 const { v4: uuid } = require('uuid');
 const User = require('../models/User');
@@ -6,7 +5,7 @@ const Organization = require('../models/Organization');
 
 const router = express.Router();
 
-// 🔐 Login API (via User model)
+// 🔐 Login API
 router.post('/organization/login', async (req, res) => {
   try {
     const { center_code, password } = req.body;
@@ -39,7 +38,49 @@ router.post('/organization/login', async (req, res) => {
   }
 });
 
-// ➕ Register new user (by organization)
+// 🔓 Forgot Password Verification
+router.post('/organization/forgot-password', async (req, res) => {
+  try {
+    const { center_code, mobile } = req.body;
+
+    const user = await User.findOne({
+      login_username: center_code,
+      mobile: mobile
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'No matching user found' });
+    }
+
+    res.status(200).json({ message: 'verified', user_id: user._id });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ message: 'server_error' });
+  }
+});
+
+// 🔐 Reset Password
+router.post('/organization/reset-password/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { new_password } = req.body;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.login_password = new_password;
+    await user.save();
+
+    res.status(200).json({ message: 'reset_success' });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ message: 'server_error' });
+  }
+});
+
+// ➕ Register new user
 router.post("/register", async (req, res) => {
   const { name, password, mobile, type, organization_id } = req.body;
 
@@ -91,7 +132,7 @@ router.get("/GetUserList/:organization_id", async (req, res) => {
   }
 });
 
-// 📄 Get single user by MongoDB ID
+// 📄 Get single user by ID
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
 
