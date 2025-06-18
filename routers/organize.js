@@ -4,7 +4,7 @@ const Organization = require('../models/Organization');
 const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
 
-// POST /api/organize/add - Register new organization
+// ✅ 1. Signup Route
 router.post('/add', async (req, res) => {
   try {
     const {
@@ -21,14 +21,10 @@ router.post('/add', async (req, res) => {
     }
 
     const existingOrg = await Organization.findOne({ center_code });
-    if (existingOrg) {
-      return res.status(400).json({ message: 'exist' });
-    }
+    if (existingOrg) return res.status(400).json({ message: 'exist' });
 
     const existingMobile = await User.findOne({ mobile: mobile_number });
-    if (existingMobile) {
-      return res.status(400).json({ message: 'duplicate_call_number' });
-    }
+    if (existingMobile) return res.status(400).json({ message: 'duplicate_call_number' });
 
     const newOrg = new Organization({
       organization_uuid: uuidv4(),
@@ -70,49 +66,63 @@ router.post('/add', async (req, res) => {
   }
 });
 
-// GET /api/organize/:id - Get organization by ID
+// ✅ 2. Get Organization by ID
 router.get('/:id', async (req, res) => {
   try {
     const org = await Organization.findById(req.params.id);
-    if (!org) {
-      return res.status(404).json({ message: 'Organization not found' });
-    }
-    res.status(200).json(org);
+    if (!org) return res.status(404).json({ message: 'Organization not found' });
+
+    res.json({ result: org });
   } catch (err) {
-    console.error('Get org error:', err.message || err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Fetch org error:', err.message || err);
+    res.status(500).json({ message: err.message || 'server_error' });
   }
 });
 
-// PUT /api/organize/:id - Update organization
-router.put('/:id', async (req, res) => {
+// ✅ 3. Update Organization Profile
+router.put('/update/:id', async (req, res) => {
   try {
     const updated = await Organization.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true }
     );
-    if (!updated) {
-      return res.status(404).json({ message: 'Organization not found' });
-    }
-    res.status(200).json({ message: 'updated', org: updated });
+
+    if (!updated) return res.status(404).json({ message: 'Organization not found' });
+
+    res.json({ message: 'updated', result: updated });
   } catch (err) {
     console.error('Update org error:', err.message || err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: err.message || 'server_error' });
   }
 });
 
-// DELETE /api/organize/:id - Delete organization
-router.delete('/:id', async (req, res) => {
+// ✅ 4. Change Password (and sync with User)
+router.put('/change-password/:id', async (req, res) => {
   try {
-    const deleted = await Organization.findByIdAndDelete(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ message: 'Organization not found' });
+    const { current_password, new_password } = req.body;
+
+    const org = await Organization.findById(req.params.id);
+    if (!org) return res.status(404).json({ success: false, message: 'Organization not found' });
+
+    if (org.login_password !== current_password) {
+      return res.status(400).json({ success: false, message: 'Incorrect current password' });
     }
-    res.status(200).json({ message: 'deleted' });
+
+    // Update org password
+    org.login_password = new_password;
+    await org.save();
+
+    // Also update admin user's password
+    await User.updateOne(
+      { organization_id: org._id, type: 'admin' },
+      { $set: { login_password: new_password } }
+    );
+
+    res.json({ success: true });
   } catch (err) {
-    console.error('Delete org error:', err.message || err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Password change error:', err.message || err);
+    res.status(500).json({ success: false, message: err.message || 'server_error' });
   }
 });
 
