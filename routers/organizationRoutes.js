@@ -1,3 +1,4 @@
+// organizationRoutes.js
 const express = require('express');
 const Organization = require('../models/Organization');
 const multer = require('multer');
@@ -30,8 +31,6 @@ router.put('/:id', upload.single('image'), async (req, res) => {
       organization_whatsapp_number,
       organization_whatsapp_message,
       domains,
-      login_username,
-      login_password,
       theme_color,
       plan_type,
       organization_type
@@ -42,8 +41,6 @@ router.put('/:id', upload.single('image'), async (req, res) => {
       organization_call_number,
       organization_whatsapp_number,
       organization_whatsapp_message,
-      login_username,
-      login_password,
       theme_color,
       organization_type,
       plan_type: plan_type || 'free',
@@ -83,3 +80,4 @@ router.get('/GetOrganizList', async (req, res) => {
 });
 
 module.exports = router;
+
