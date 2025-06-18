@@ -1,4 +1,3 @@
-// models/User.js
 const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
@@ -30,7 +29,7 @@ const userSchema = new mongoose.Schema({
   organization_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Organization',
-    required: true
+    required: true,
   },
   last_login_at: {
     type: Date,
@@ -39,6 +38,10 @@ const userSchema = new mongoose.Schema({
   last_activity_at: {
     type: Date,
     default: null,
+  },
+  last_password_change: {                         // ✅ Add this field
+    type: Date,
+    default: Date.now,
   }
 });
 
