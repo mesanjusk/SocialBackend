@@ -4,7 +4,7 @@ const Organization = require('../models/Organization');
 const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
 
-// POST /api/organize/add
+// POST /api/organize/add - Register new organization
 router.post('/add', async (req, res) => {
   try {
     const {
@@ -16,24 +16,20 @@ router.post('/add', async (req, res) => {
       theme_color
     } = req.body;
 
-    // Validate required fields
     if (!organization_title || !organization_type || !center_code || !organization_call_number || !mobile_number) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    // Check for duplicate center code
     const existingOrg = await Organization.findOne({ center_code });
     if (existingOrg) {
       return res.status(400).json({ message: 'exist' });
     }
 
-    // Check for duplicate mobile number (admin user)
     const existingMobile = await User.findOne({ mobile: mobile_number });
     if (existingMobile) {
       return res.status(400).json({ message: 'duplicate_call_number' });
     }
 
-    // Create new organization
     const newOrg = new Organization({
       organization_uuid: uuidv4(),
       organization_title,
@@ -50,7 +46,6 @@ router.post('/add', async (req, res) => {
 
     const savedOrg = await newOrg.save();
 
-    // Create default admin user (login = center_code)
     const newUser = new User({
       name: organization_title,
       mobile: mobile_number,
@@ -72,6 +67,52 @@ router.post('/add', async (req, res) => {
   } catch (err) {
     console.error('Signup error:', err.message || err);
     res.status(500).json({ message: err.message || 'server_error' });
+  }
+});
+
+// GET /api/organize/:id - Get organization by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const org = await Organization.findById(req.params.id);
+    if (!org) {
+      return res.status(404).json({ message: 'Organization not found' });
+    }
+    res.status(200).json(org);
+  } catch (err) {
+    console.error('Get org error:', err.message || err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// PUT /api/organize/:id - Update organization
+router.put('/:id', async (req, res) => {
+  try {
+    const updated = await Organization.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    if (!updated) {
+      return res.status(404).json({ message: 'Organization not found' });
+    }
+    res.status(200).json({ message: 'updated', org: updated });
+  } catch (err) {
+    console.error('Update org error:', err.message || err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// DELETE /api/organize/:id - Delete organization
+router.delete('/:id', async (req, res) => {
+  try {
+    const deleted = await Organization.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ message: 'Organization not found' });
+    }
+    res.status(200).json({ message: 'deleted' });
+  } catch (err) {
+    console.error('Delete org error:', err.message || err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
