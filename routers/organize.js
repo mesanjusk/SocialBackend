@@ -16,12 +16,18 @@ router.post('/add', async (req, res) => {
       theme_color
     } = req.body;
 
-    // Check for duplicate center code or mobile number
+    // Validate required fields
+    if (!organization_title || !organization_type || !center_code || !organization_call_number || !mobile_number) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    // Check for duplicate center code
     const existingOrg = await Organization.findOne({ center_code });
     if (existingOrg) {
       return res.status(400).json({ message: 'exist' });
     }
 
+    // Check for duplicate mobile number (admin user)
     const existingMobile = await User.findOne({ mobile: mobile_number });
     if (existingMobile) {
       return res.status(400).json({ message: 'duplicate_call_number' });
@@ -29,12 +35,17 @@ router.post('/add', async (req, res) => {
 
     // Create new organization
     const newOrg = new Organization({
+      organization_uuid: uuidv4(),
       organization_title,
       organization_type,
       center_code,
       organization_call_number,
-      theme_color,
+      theme_color: theme_color || '#10B981',
       domains: [],
+      login_username: center_code,
+      login_password: center_code,
+      plan_type: 'free',
+      created_by: 'self',
     });
 
     const savedOrg = await newOrg.save();
@@ -59,8 +70,8 @@ router.post('/add', async (req, res) => {
       theme_color: savedOrg.theme_color,
     });
   } catch (err) {
-    console.error('Signup error:', err);
-    res.status(500).json({ message: 'server_error' });
+    console.error('Signup error:', err.message || err);
+    res.status(500).json({ message: err.message || 'server_error' });
   }
 });
 
