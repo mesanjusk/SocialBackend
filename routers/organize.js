@@ -1,100 +1,66 @@
 const express = require('express');
-const { v4: uuid } = require('uuid');
-const Organization = require('../models/Organization');
-const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
-
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: 'organization',
-    allowed_formats: ['jpg', 'png', 'jpeg']
-  }
-});
-
-const upload = multer({ storage });
 const router = express.Router();
+const Organization = require('../models/Organization');
+const User = require('../models/User');
+const { v4: uuidv4 } = require('uuid');
 
-// ➕ SIGNUP ORGANIZATION
-router.post("/add", upload.single("image"), async (req, res) => {
+// POST /api/organize/add
+router.post('/add', async (req, res) => {
   try {
     const {
-      center_code,
       organization_title,
       organization_type,
-      organization_call_number
+      center_code,
+      organization_call_number,
+      mobile_number,
+      theme_color
     } = req.body;
 
-    if (!center_code || !organization_title || !organization_type || !organization_call_number) {
-      return res.status(400).json({ message: "Missing required fields" });
+    // Check for duplicate center code or mobile number
+    const existingOrg = await Organization.findOne({ center_code });
+    if (existingOrg) {
+      return res.status(400).json({ message: 'exist' });
     }
 
-    const exists = await Organization.findOne({ center_code });
-    if (exists) return res.json({ message: "exist" });
-
-    const newOrg = new Organization({
-      organization_uuid: uuid(),
-      center_code,
-      organization_title,
-      organization_type,
-      organization_call_number,
-      login_username: center_code,
-      login_password: center_code,
-      plan_type: "free",
-      theme_color: "#10B981",
-      organization_logo: req.file?.path || null,
-    });
-
-    await newOrg.save();
-
-    res.json({
-      message: "success",
-      organization_id: newOrg.organization_uuid,
-      organization_title: newOrg.organization_title,
-      center_code: newOrg.center_code,
-      theme_color: newOrg.theme_color
-    });
-  } catch (err) {
-    if (err.code === 11000 && err.keyPattern?.organization_call_number) {
+    const existingMobile = await User.findOne({ mobile: mobile_number });
+    if (existingMobile) {
       return res.status(400).json({ message: 'duplicate_call_number' });
     }
-    console.error("Signup error:", err);
-    res.status(500).json({ message: "Server error during signup" });
-  }
-});
 
-// 🔐 LOGIN ORGANIZATION
-router.post("/login", async (req, res) => {
-  const { center_code, login_password } = req.body;
+    // Create new organization
+    const newOrg = new Organization({
+      organization_title,
+      organization_type,
+      center_code,
+      organization_call_number,
+      theme_color,
+      domains: [],
+    });
 
-  if (!center_code || !login_password) {
-    return res.status(400).json({ message: "Missing credentials" });
-  }
+    const savedOrg = await newOrg.save();
 
-  try {
-    const org = await Organization.findOne({ center_code, login_password });
+    // Create default admin user (login = center_code)
+    const newUser = new User({
+      name: organization_title,
+      mobile: mobile_number,
+      login_username: center_code,
+      login_password: center_code,
+      type: 'admin',
+      organization_id: savedOrg._id,
+    });
 
-    if (org) {
-      return res.json({
-        message: "success",
-        organization_id: org.organization_uuid,
-        organization_title: org.organization_title,
-        center_code: org.center_code,
-        theme_color: org.theme_color
-      });
-    } else {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
+    await newUser.save();
+
+    res.status(201).json({
+      message: 'success',
+      organization_id: savedOrg._id,
+      organization_title: savedOrg.organization_title,
+      center_code: savedOrg.center_code,
+      theme_color: savedOrg.theme_color,
+    });
   } catch (err) {
-    console.error("Login error:", err);
-    return res.status(500).json({ message: "Server error during login" });
+    console.error('Signup error:', err);
+    res.status(500).json({ message: 'server_error' });
   }
 });
 
