@@ -1,8 +1,43 @@
+// authRoutes.js
 const express = require('express');
 const { v4: uuid } = require('uuid');
 const User = require('../models/User');
+const Organization = require('../models/Organization');
 
 const router = express.Router();
+
+// 🔐 Login API (via User model)
+router.post('/organization/login', async (req, res) => {
+  try {
+    const { center_code, password } = req.body;
+
+    const user = await User.findOne({
+      login_username: center_code,
+      login_password: password
+    }).populate('organization_id');
+
+    if (!user) {
+      return res.status(401).json({ message: 'invalid' });
+    }
+
+    user.last_login_at = new Date();
+    await user.save();
+
+    return res.status(200).json({
+      message: 'success',
+      user_id: user._id,
+      user_name: user.name,
+      user_type: user.type,
+      organization_id: user.organization_id._id,
+      organization_title: user.organization_id.organization_title,
+      center_code: user.organization_id.center_code,
+      theme_color: user.organization_id.theme_color
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ message: 'server_error' });
+  }
+});
 
 // ➕ Register new user (by organization)
 router.post("/register", async (req, res) => {
@@ -24,6 +59,8 @@ router.post("/register", async (req, res) => {
       password,
       mobile,
       type,
+      login_username: mobile,
+      login_password: password,
       user_uuid: uuid(),
       organization_id,
     });
