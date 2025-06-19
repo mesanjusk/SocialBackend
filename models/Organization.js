@@ -29,6 +29,10 @@ const organizationSchema = new mongoose.Schema({
     type: String,
     required: false, // optional; user-level login uses this
   },
+  center_head_name: {
+    type: String,
+    required: true, // ✅ Newly added field
+  },
   organization_logo: {
     type: String,
     default: '',
