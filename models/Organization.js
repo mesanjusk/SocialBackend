@@ -31,7 +31,7 @@ const organizationSchema = new mongoose.Schema({
   },
   center_head_name: {
     type: String,
-    required: true, // ✅ Newly added field
+    required: true,
   },
   organization_logo: {
     type: String,
@@ -40,6 +40,14 @@ const organizationSchema = new mongoose.Schema({
   theme_color: {
     type: String,
     default: '#10B981',
+  },
+  address: {
+    type: String,
+    required: false, // ✅ Optional address field
+  },
+  email: {
+    type: String,
+    required: false, // ✅ Optional email field
   },
   plan_type: {
     type: String,
