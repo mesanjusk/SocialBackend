@@ -9,9 +9,10 @@ const userSchema = new mongoose.Schema({
   },
   name: String,
   mobile: {
-    type: Number,
-    unique: true,
-  },
+  type: String,    // ✅ change applied here
+  unique: true,
+},
+
   login_username: {
     type: String,
     required: true,
