@@ -5,7 +5,7 @@ const Organization = require('../models/Organization');
 
 const router = express.Router();
 
-// 🔐 Login API
+// 🔐 Organization Login (Center Head)
 router.post('/organization/login', async (req, res) => {
   try {
     const { center_code, password } = req.body;
@@ -29,12 +29,45 @@ router.post('/organization/login', async (req, res) => {
       user_type: user.type,
       organization_id: user.organization_id._id,
       organization_title: user.organization_id.organization_title,
-      center_head_name: user.organization_id.center_head_name, // ✅ NEW
+      center_head_name: user.organization_id.center_head_name, // ✅
       center_code: user.organization_id.center_code,
       theme_color: user.organization_id.theme_color
     });
   } catch (err) {
     console.error('Login error:', err);
+    res.status(500).json({ message: 'server_error' });
+  }
+});
+
+// 👤 User Login (Admin / Staff)
+router.post('/user/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    const user = await User.findOne({
+      login_username: username,
+      login_password: password
+    }).populate('organization_id');
+
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    user.last_login_at = new Date();
+    await user.save();
+
+    return res.status(200).json({
+      message: 'success',
+      user_id: user._id,
+      user_name: user.name,
+      user_type: user.type,
+      organization_id: user.organization_id._id,
+      organization_title: user.organization_id.organization_title,
+      theme_color: user.organization_id.theme_color,
+      last_password_change: user.last_password_change || null
+    });
+  } catch (err) {
+    console.error('User login error:', err);
     res.status(500).json({ message: 'server_error' });
   }
 });
@@ -91,14 +124,12 @@ router.post("/register", async (req, res) => {
 
   try {
     const check = await User.findOne({ mobile });
-
     if (check) {
       return res.json("exist");
     }
 
     const newUser = new User({
       name,
-      password,
       mobile,
       type,
       login_username: mobile,
@@ -109,7 +140,6 @@ router.post("/register", async (req, res) => {
 
     await newUser.save();
     res.json("notexist");
-
   } catch (e) {
     console.error("Error saving user:", e);
     res.status(500).json("fail");
@@ -162,7 +192,6 @@ router.delete('/:id', async (req, res) => {
 
     await User.findByIdAndDelete(req.params.id);
     res.json({ message: 'User deleted successfully' });
-
   } catch (err) {
     console.error('Delete error:', err);
     res.status(500).json({ message: 'Internal server error' });
@@ -186,7 +215,6 @@ router.put("/:id", async (req, res) => {
     }
 
     res.status(200).json({ success: true, message: 'User updated successfully', result: updatedUser });
-
   } catch (error) {
     console.error('Error updating user:', error);
     res.status(500).json({ success: false, message: 'Error updating user', error: error.message });
