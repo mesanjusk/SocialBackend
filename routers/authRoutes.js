@@ -29,6 +29,7 @@ router.post('/organization/login', async (req, res) => {
       user_type: user.type,
       organization_id: user.organization_id._id,
       organization_title: user.organization_id.organization_title,
+      center_head_name: user.organization_id.center_head_name, // ✅ NEW
       center_code: user.organization_id.center_code,
       theme_color: user.organization_id.theme_color
     });
