@@ -35,20 +35,22 @@ router.post('/add', async (req, res) => {
     const existingMobile = await User.findOne({ mobile: mobile_number });
     if (existingMobile) return res.status(400).json({ message: 'duplicate_call_number' });
 
-    const newOrg = new Organization({
-      organization_uuid: uuidv4(),
-      organization_title,
-      organization_type,
-      center_code,
-      organization_call_number,
-      center_head_name, // ✅ Store in DB
-      theme_color: theme_color || '#10B981',
-      domains: [],
-      login_username: center_code,
-      login_password: center_code,
-      plan_type: 'free',
-      created_by: 'self',
-    });
+   const newOrg = new Organization({
+  organization_uuid: uuidv4(),
+  organization_title,
+  organization_type,
+  center_code,
+  organization_call_number,
+  center_head_name,
+  theme_color: theme_color || '#10B981',
+  plan_type: 'trial', // ✅ default for new signups
+  domains: [],
+  login_username: center_code,
+  login_password: center_code,
+  created_by: 'self',
+  // ⛔ Do NOT set expiry_date manually — schema handles it
+});
+
 
     const savedOrg = await newOrg.save();
 
