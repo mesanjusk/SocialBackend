@@ -27,7 +27,7 @@ const organizationSchema = new mongoose.Schema({
   },
   mobile_number: {
     type: String,
-    required: false, // optional; user-level login uses this
+    required: false,
   },
   center_head_name: {
     type: String,
@@ -43,16 +43,16 @@ const organizationSchema = new mongoose.Schema({
   },
   address: {
     type: String,
-    required: false, // ✅ Optional address field
+    required: false,
   },
   email: {
     type: String,
-    required: false, // ✅ Optional email field
+    required: false,
   },
   plan_type: {
     type: String,
-    enum: ['free', 'paid'],
-    default: 'free',
+    enum: ['free', 'trial', 'paid'], // ✅ Updated enum
+    default: 'trial',
   },
   created_by: {
     type: String,
@@ -61,6 +61,13 @@ const organizationSchema = new mongoose.Schema({
   created_at: {
     type: Date,
     default: Date.now,
+  },
+  expiry_date: {
+    type: Date,
+    default: function () {
+      const now = new Date();
+      return new Date(now.setDate(now.getDate() + 14)); // ✅ 14 days after creation
+    },
   },
   domains: {
     type: [String],
