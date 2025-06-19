@@ -5,6 +5,7 @@ const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
 
 // ✅ 1. Signup Route
+// ✅ 1. Signup Route with center_head_name
 router.post('/add', async (req, res) => {
   try {
     const {
@@ -13,10 +14,18 @@ router.post('/add', async (req, res) => {
       center_code,
       organization_call_number,
       mobile_number,
+      center_head_name, // ✅ New Field
       theme_color
     } = req.body;
 
-    if (!organization_title || !organization_type || !center_code || !organization_call_number || !mobile_number) {
+    if (
+      !organization_title ||
+      !organization_type ||
+      !center_code ||
+      !organization_call_number ||
+      !mobile_number ||
+      !center_head_name // ✅ Required
+    ) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
@@ -32,6 +41,7 @@ router.post('/add', async (req, res) => {
       organization_type,
       center_code,
       organization_call_number,
+      center_head_name, // ✅ Store in DB
       theme_color: theme_color || '#10B981',
       domains: [],
       login_username: center_code,
@@ -65,6 +75,7 @@ router.post('/add', async (req, res) => {
     res.status(500).json({ message: err.message || 'server_error' });
   }
 });
+
 
 // ✅ 2. Get Organization by ID
 router.get('/:id', async (req, res) => {
