@@ -2,10 +2,14 @@ const express = require('express');
 const { v4: uuid } = require('uuid');
 const User = require('../models/User');
 const Organization = require('../models/Organization');
+const resolveOrganization = require('../middleware/resolveOrganization');
 
 const router = express.Router();
 
-// 🔐 Organization Login (Center Head)
+//
+// ✅ PUBLIC ROUTES (no middleware)
+//
+
 router.post('/organization/login', async (req, res) => {
   try {
     const { center_code, password } = req.body;
@@ -29,7 +33,7 @@ router.post('/organization/login', async (req, res) => {
       user_type: user.type,
       organization_id: user.organization_id._id,
       organization_title: user.organization_id.organization_title,
-      center_head_name: user.organization_id.center_head_name, // ✅
+      center_head_name: user.organization_id.center_head_name,
       center_code: user.organization_id.center_code,
       theme_color: user.organization_id.theme_color
     });
@@ -39,7 +43,6 @@ router.post('/organization/login', async (req, res) => {
   }
 });
 
-// 👤 User Login (Admin / Staff)
 router.post('/user/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -72,7 +75,6 @@ router.post('/user/login', async (req, res) => {
   }
 });
 
-// 🔓 Forgot Password Verification
 router.post('/organization/forgot-password', async (req, res) => {
   try {
     const { center_code, mobile } = req.body;
@@ -93,7 +95,6 @@ router.post('/organization/forgot-password', async (req, res) => {
   }
 });
 
-// 🔐 Reset Password
 router.post('/organization/reset-password/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -114,7 +115,6 @@ router.post('/organization/reset-password/:id', async (req, res) => {
   }
 });
 
-// ➕ Register new user
 router.post("/register", async (req, res) => {
   const { name, password, mobile, type, organization_id } = req.body;
 
@@ -146,50 +146,37 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// 🧾 Get all users for one organization
+//
+// ✅ PROTECTED ROUTES (with middleware)
+//
+
+router.use(resolveOrganization); // protect all routes below this line
+
 router.get("/GetUserList/:organization_id", async (req, res) => {
   const { organization_id } = req.params;
-
   try {
     const users = await User.find({ organization_id });
-
-    if (users.length)
-      res.json({ success: true, result: users });
-    else
-      res.json({ success: false, message: "No users found" });
+    res.json(users.length ? { success: true, result: users } : { success: false, message: "No users found" });
   } catch (err) {
     console.error("Error fetching users:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// 📄 Get single user by ID
 router.get('/:id', async (req, res) => {
-  const { id } = req.params;
-
   try {
-    const user = await User.findById(id);
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-
-    res.status(200).json({ success: true, result: user });
+    const user = await User.findById(req.params.id);
+    res.status(user ? 200 : 404).json(user ? { success: true, result: user } : { success: false, message: 'User not found' });
   } catch (error) {
     console.error('Error fetching user:', error);
     res.status(500).json({ success: false, message: 'Error fetching user', error: error.message });
   }
 });
 
-// ❌ Delete user
 router.delete('/:id', async (req, res) => {
   try {
-    const users = await User.findById(req.params.id);
-
-    if (!users) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
     await User.findByIdAndDelete(req.params.id);
     res.json({ message: 'User deleted successfully' });
   } catch (err) {
@@ -198,22 +185,15 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// ✏️ Update user
 router.put("/:id", async (req, res) => {
-  const { id } = req.params;
   const { name, mobile, type, password } = req.body;
-
   try {
     const updatedUser = await User.findOneAndUpdate(
-      { _id: id },
+      { _id: req.params.id },
       { name, mobile, type, password },
       { new: true }
     );
-
-    if (!updatedUser) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-
+    if (!updatedUser) return res.status(404).json({ success: false, message: 'User not found' });
     res.status(200).json({ success: true, message: 'User updated successfully', result: updatedUser });
   } catch (error) {
     console.error('Error updating user:', error);
