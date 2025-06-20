@@ -23,11 +23,11 @@ mongoose.connect(process.env.MONGO_URI, {
   console.error('❌ MongoDB connection error:', err.message);
 });
 
-// ✅ Subdomain organization middleware + route
+// ✅ Subdomain middleware + route
 const resolveOrganization = require('./middleware/resolveOrganization');
 const resolveOrgRoute = require('./routers/resolveOrgRoute');
 
-// ✅ Public root handler for subdomain detection
+// ✅ Root path check
 app.get('/', (req, res) => {
   const host = req.headers.host;
   if (!host || host.split('.').length < 3) {
@@ -37,11 +37,13 @@ app.get('/', (req, res) => {
   }
 });
 
-// ✅ Public subdomain resolution route
+// ✅ Public route to resolve subdomain
 app.use('/api/resolve-org', resolveOrgRoute);
 
-// ✅ Protected routes with organization resolution
-app.use('/api/auth', resolveOrganization, require('./routers/authRoutes'));
+// ✅ Allow login routes on root domain
+app.use('/api/auth', require('./routers/authRoutes')); // ⬅️ no middleware here
+
+// ✅ All others are protected with subdomain
 app.use('/api/organize', resolveOrganization, require('./routers/organize'));
 app.use('/api/organization', resolveOrganization, require('./routers/organizationRoutes'));
 app.use('/api/enquiry', resolveOrganization, require('./routers/enquiryRoutes'));
@@ -53,7 +55,7 @@ app.use('/api/education', resolveOrganization, require('./routers/educationRoute
 app.use('/api/exams', resolveOrganization, require('./routers/examRoutes'));
 app.use('/api/paymentmode', resolveOrganization, require('./routers/paymentModeRoutes'));
 
-// ✅ File upload remains public (if needed)
+// ✅ Upload stays public
 app.use('/api/upload', require('./uploadRoute'));
 
 // 404 fallback
@@ -61,7 +63,7 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// Start server
+// Server listen
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
