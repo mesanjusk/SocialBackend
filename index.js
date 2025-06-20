@@ -23,10 +23,6 @@ mongoose.connect(process.env.MONGO_URI, {
   console.error('❌ MongoDB connection error:', err.message);
 });
 
-// ✅ Subdomain middleware + route
-const resolveOrganization = require('./middleware/resolveOrganization');
-const resolveOrgRoute = require('./routers/resolveOrgRoute');
-
 // ✅ Root path check
 app.get('/', (req, res) => {
   const host = req.headers.host;
@@ -38,22 +34,20 @@ app.get('/', (req, res) => {
 });
 
 // ✅ Public route to resolve subdomain
-app.use('/api/resolve-org', resolveOrgRoute);
+app.use('/api/resolve-org', require('./routers/resolveOrgRoute'));
 
-// ✅ Allow login routes on root domain
-app.use('/api/auth', require('./routers/authRoutes')); // ⬅️ no middleware here
-
-// ✅ All others are protected with subdomain
-app.use('/api/organize', resolveOrganization, require('./routers/organize'));
-app.use('/api/organization', resolveOrganization, require('./routers/organizationRoutes'));
-app.use('/api/enquiry', resolveOrganization, require('./routers/enquiryRoutes'));
-app.use('/api/courses', resolveOrganization, require('./routers/courseRoutes'));
-app.use('/api/record', resolveOrganization, require('./routers/recordRoutes'));
-app.use('/api/batches', resolveOrganization, require('./routers/batchRoutes'));
-app.use('/api/org-categories', resolveOrganization, require('./routers/orgCategoryRoutes'));
-app.use('/api/education', resolveOrganization, require('./routers/educationRoutes'));
-app.use('/api/exams', resolveOrganization, require('./routers/examRoutes'));
-app.use('/api/paymentmode', resolveOrganization, require('./routers/paymentModeRoutes'));
+// ✅ All API routes (without resolveOrganization middleware)
+app.use('/api/auth', require('./routers/authRoutes'));
+app.use('/api/organize', require('./routers/organize'));
+app.use('/api/organization', require('./routers/organizationRoutes'));
+app.use('/api/enquiry', require('./routers/enquiryRoutes'));
+app.use('/api/courses', require('./routers/courseRoutes'));
+app.use('/api/record', require('./routers/recordRoutes'));
+app.use('/api/batches', require('./routers/batchRoutes'));
+app.use('/api/org-categories', require('./routers/orgCategoryRoutes'));
+app.use('/api/education', require('./routers/educationRoutes'));
+app.use('/api/exams', require('./routers/examRoutes'));
+app.use('/api/paymentmode', require('./routers/paymentModeRoutes'));
 
 // ✅ Upload stays public
 app.use('/api/upload', require('./uploadRoute'));
