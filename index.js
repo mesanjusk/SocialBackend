@@ -41,8 +41,6 @@ app.get('/', (req, res) => {
 
 // ✅ All API routes
 
-// Optional legacy cleanup route (can remove if unused)
-app.use('/api/organize', require('./routers/Deleteorganize'));
 
 // ✅ Institute-based architecture
 app.use('/api/organization', require('./routers/instituteRoutes')); // Institute APIs (Signup etc.)
