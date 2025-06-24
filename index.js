@@ -26,7 +26,12 @@ mongoose.connect(process.env.MONGO_URI, {
 // ✅ Root path check
 app.get('/', (req, res) => {
   const host = req.headers.host || '';
-  const isSubdomain = host.split('.').length > 2 && !host.includes('localhost');
+
+  // This will only treat domains like `tenant.domain.com` as subdomains
+  const baseDomains = ['onrender.com', 'render.com']; // You can extend this if needed
+  const isSubdomain = baseDomains.some(base =>
+    host.endsWith(base) && host.split('.').length > base.split('.').length + 1
+  );
 
   if (isSubdomain) {
     res.send('🌐 Subdomain detected. Use frontend interface.');
@@ -34,6 +39,7 @@ app.get('/', (req, res) => {
     res.send('✅ API is running...');
   }
 });
+
 
 // ✅ Public route to resolve subdomain
 app.use('/api/resolve-org', require('./routers/resolveOrgRoute'));
