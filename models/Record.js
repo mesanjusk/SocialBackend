@@ -3,20 +3,14 @@ const { v4: uuidv4 } = require('uuid');
 
 const recordSchema = new mongoose.Schema({
   uuid: { type: String, default: uuidv4 },
+  type: { type: String, enum: ['enquiry'], required: true }, // only enquiry as root type
+  organization_uuid: { type: String, required: true }, // ✅ using UUID not _id
 
-  // Record type: either 'enquiry' or 'admission'
-  type: { type: String, enum: ['enquiry', 'admission'], required: true },
-
-  // Required organization identifier
-  organization_id: { type: String, required: true },
-
-  // For tracking enquiry converted to admission
   convertedToAdmission: { type: Boolean, default: false },
 
-  // Common fields
+  // Common enquiry fields
   branchCode: String,
   enquiryDate: Date,
-  admissionDate: Date,
   firstName: String,
   middleName: String,
   lastName: String,
@@ -32,19 +26,26 @@ const recordSchema = new mongoose.Schema({
   referredBy: String,
   followUpDate: Date,
   remarks: String,
-  course: String,
-  batchTime: String,
-  examEvent: String,
-  installment: String,
-  fees: Number,
-  discount: Number,
-  total: Number,
-  feePaid: Number,
-  paidBy: String,
-  balance: Number,
 
-  // Optional: Track who created the record
-  createdBy: String
+  // 🆕 Admission sub-record array
+  admissionDetails: [
+    {
+      admissionDate: Date,
+      course: String,
+      batchTime: String,
+      examEvent: String,
+      installment: String,
+      fees: Number,
+      discount: Number,
+      total: Number,
+      feePaid: Number,
+      paidBy: String,
+      balance: Number,
+      createdBy: String,
+      createdAt: { type: Date, default: Date.now },
+    }
+  ],
+  
 }, { timestamps: true });
 
 module.exports = mongoose.model('Record', recordSchema);

@@ -19,30 +19,46 @@ router.get('/org/:organization_id', async (req, res) => {
   }
 });
 
-// Create new record (enquiry or admission)
+// Create new record
 router.post('/', async (req, res) => {
   try {
-    const { organization_id, type } = req.body;
-    if (!organization_id || !type) {
-      return res.status(400).json({ error: 'organization_id and type are required' });
+    const { organization_uuid, type } = req.body;
+    if (!organization_uuid || type !== 'enquiry') {
+      return res.status(400).json({ error: 'Only enquiry records are allowed initially' });
     }
 
     const newRecord = new Record(req.body);
     await newRecord.save();
-
-    // Optional: mark related enquiry as converted
-    if (req.body._enquiryId && type === 'admission') {
-      await Record.findByIdAndUpdate(req.body._enquiryId, {
-        convertedToAdmission: true
-      });
-    }
-
     res.json(newRecord);
   } catch (err) {
-    console.error('Create record failed:', err);
-    res.status(500).json({ error: 'Failed to save record' });
+    console.error('Create enquiry failed:', err);
+    res.status(500).json({ error: 'Failed to save enquiry' });
   }
 });
+
+router.post('/convert/:uuid', async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const { organization_uuid, admissionData } = req.body;
+
+    const record = await Record.findOne({ uuid, organization_uuid });
+
+    if (!record) {
+      return res.status(404).json({ error: 'Enquiry not found' });
+    }
+
+    record.convertedToAdmission = true;
+    record.admissionDetails.push(admissionData); 
+
+    await record.save();
+
+    res.json({ success: true, message: 'Converted to admission', record });
+  } catch (err) {
+    console.error('Conversion failed:', err);
+    res.status(500).json({ error: 'Failed to convert to admission' });
+  }
+});
+
 
 // Update record
 router.put('/:id', async (req, res) => {
