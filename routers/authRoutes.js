@@ -1,6 +1,6 @@
 const express = require('express');
 const { v4: uuid } = require('uuid');
-const User = require('../models/User');
+const User = require('../models/user');
 const Organization = require('../models/Organization');
 const resolveOrganization = require('../middleware/resolveOrganization');
 
