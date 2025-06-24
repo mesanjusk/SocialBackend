@@ -25,12 +25,13 @@ mongoose.connect(process.env.MONGO_URI, {
 
 // ✅ Root path check
 app.get('/', (req, res) => {
-  const host = req.headers.host;
-  if (!host || host.split('.').length < 3) {
-    res.send('✅ API is running on root domain...');
-  } else {
-    res.send('🌐 Subdomain detected. Use frontend interface.');
+  if (process.env.NODE_ENV === 'production') {
+    const host = req.headers.host;
+    if (host && host.split('.').length > 2) {
+      return res.send('🌐 Subdomain detected. Use frontend interface.');
+    }
   }
+  res.send('✅ API is running...');
 });
 
 // ✅ Public route to resolve subdomain
