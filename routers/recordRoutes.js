@@ -47,7 +47,7 @@ router.post('/convert/:uuid', async (req, res) => {
     if (!record) {
       return res.status(404).json({ error: 'Enquiry not found' });
     }
-
+    record.type = 'admission';
     record.convertedToAdmission = true;
     record.admissionDetails.push(admissionData); 
 
