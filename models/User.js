@@ -4,46 +4,84 @@ const { v4: uuidv4 } = require('uuid');
 const userSchema = new mongoose.Schema({
   user_uuid: {
     type: String,
-    default: () => uuidv4(),
-    unique: true,
+    default: uuidv4,
+    unique: true
   },
-  name: String,
+
+  name: {
+    type: String,
+    required: true
+  },
+
+  email: {
+    type: String,
+    unique: true,
+    sparse: true  // Optional for flexibility if some users use mobile login
+  },
+
   mobile: {
-  type: String,    // ✅ change applied here
-  unique: true,
-},
+    type: String,
+    unique: true,
+    sparse: true
+  },
 
   login_username: {
     type: String,
     required: true,
-    unique: true,
+    unique: true
   },
+
   login_password: {
     type: String,
-    required: true,
+    required: true
   },
-  type: {
+
+  role: {
     type: String,
-    enum: ['admin', 'staff', 'owner'],
-    default: 'admin',
+    enum: ['superadmin', 'owner', 'admin', 'staff', 'student', 'parent'],
+    default: 'admin'
   },
+
   organization_id: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Organization',
-    required: true,
+    required: true
   },
+
+  instituteId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Institute'
+  },
+
+  isTrial: {
+    type: Boolean,
+    default: false
+  },
+
+  trialExpiresAt: {
+    type: Date
+  },
+
+  theme: {
+    primaryColor: { type: String },
+    logoUrl: { type: String }
+  },
+
   last_login_at: {
     type: Date,
-    default: null,
+    default: null
   },
+
   last_activity_at: {
     type: Date,
-    default: null,
+    default: null
   },
-  last_password_change: {                         // ✅ Add this field
+
+  last_password_change: {
     type: Date,
-    default: Date.now,
+    default: Date.now
   }
-});
+
+}, { timestamps: true }); // Adds createdAt, updatedAt
 
 module.exports = mongoose.model('User', userSchema);
