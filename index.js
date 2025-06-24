@@ -45,8 +45,8 @@ app.use('/api/resolve-org', require('./routers/resolveOrgRoute'));
 
 // ✅ All API routes (without resolveOrganization middleware)
 app.use('/api/auth', require('./routers/authRoutes'));
-app.use('/api/organize', require('./routers/organize'));
-app.use('/api/organization', require('./routers/organizationRoutes'));
+app.use('/api/organize', require('./routers/Deleteorganize'));
+app.use('/api/organization', require('./routers/instituteRoutes'));
 app.use('/api/enquiry', require('./routers/enquiryRoutes'));
 app.use('/api/courses', require('./routers/courseRoutes'));
 app.use('/api/record', require('./routers/recordRoutes'));
