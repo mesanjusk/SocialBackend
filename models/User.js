@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     unique: true,
-    sparse: true  // Optional for flexibility if some users use mobile login
+    sparse: true // allows null but ensures uniqueness if present
   },
 
   mobile: {
@@ -33,7 +33,7 @@ const userSchema = new mongoose.Schema({
 
   login_password: {
     type: String,
-    required: true
+    required: true // Store hashed password using bcrypt
   },
 
   role: {
@@ -42,15 +42,10 @@ const userSchema = new mongoose.Schema({
     default: 'admin'
   },
 
-  organization_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Organization',
-    required: true
-  },
-
   instituteId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Institute'
+    ref: 'Institute',
+    required: true
   },
 
   isTrial: {
@@ -63,8 +58,8 @@ const userSchema = new mongoose.Schema({
   },
 
   theme: {
-    primaryColor: { type: String },
-    logoUrl: { type: String }
+    primaryColor: { type: String, default: '#10B981' },
+    logoUrl: { type: String, default: '' }
   },
 
   last_login_at: {
@@ -82,6 +77,6 @@ const userSchema = new mongoose.Schema({
     default: Date.now
   }
 
-}, { timestamps: true }); // Adds createdAt, updatedAt
+}, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
