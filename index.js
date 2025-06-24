@@ -23,11 +23,11 @@ mongoose.connect(process.env.MONGO_URI, {
   console.error('❌ MongoDB connection error:', err.message);
 });
 
-// ✅ Root path check
+// ✅ Root path check (subdomain-aware message)
 app.get('/', (req, res) => {
   const host = req.headers.host || '';
+  const baseDomains = ['onrender.com', 'render.com'];
 
-  const baseDomains = ['onrender.com', 'render.com']; 
   const isSubdomain = baseDomains.some(base =>
     host.endsWith(base) && host.split('.').length > base.split('.').length + 1
   );
@@ -39,14 +39,16 @@ app.get('/', (req, res) => {
   }
 });
 
+// ✅ All API routes
 
-// ✅ Public route to resolve subdomain
-app.use('/api/resolve-org', require('./routers/resolveOrgRoute'));
-
-// ✅ All API routes (without resolveOrganization middleware)
-app.use('/api/auth', require('./routers/authRoutes'));
+// Optional legacy cleanup route (can remove if unused)
 app.use('/api/organize', require('./routers/Deleteorganize'));
-app.use('/api/organization', require('./routers/instituteRoutes'));
+
+// ✅ Institute-based architecture
+app.use('/api/organization', require('./routers/instituteRoutes')); // Institute APIs (Signup etc.)
+
+// Core modules
+app.use('/api/auth', require('./routers/authRoutes'));
 app.use('/api/enquiry', require('./routers/enquiryRoutes'));
 app.use('/api/courses', require('./routers/courseRoutes'));
 app.use('/api/record', require('./routers/recordRoutes'));
@@ -56,7 +58,7 @@ app.use('/api/education', require('./routers/educationRoutes'));
 app.use('/api/exams', require('./routers/examRoutes'));
 app.use('/api/paymentmode', require('./routers/paymentModeRoutes'));
 
-// ✅ Upload stays public
+// ✅ Upload route
 app.use('/api/upload', require('./uploadRoute'));
 
 // 404 fallback
@@ -64,7 +66,7 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// Server listen
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
