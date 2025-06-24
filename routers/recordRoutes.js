@@ -8,7 +8,7 @@ router.get('/org/:organization_id', async (req, res) => {
     const { organization_id } = req.params;
     const { type } = req.query;
 
-    const filter = { organization_id };
+    const filter = { organization_uuid: organization_id }; 
     if (type) filter.type = type;
 
     const data = await Record.find(filter).sort({ createdAt: -1 });
@@ -18,6 +18,7 @@ router.get('/org/:organization_id', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 // Create new record
 router.post('/', async (req, res) => {
