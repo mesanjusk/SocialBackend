@@ -1,8 +1,7 @@
 const express = require('express');
 const { v4: uuid } = require('uuid');
-const User = require('../models/User');
-const Organization = require('../models/Organization');
-const resolveOrganization = require('../middleware/resolveOrganization');
+const User = require('../models/user');
+const Institute = require('../models/institute');
 
 const router = express.Router();
 
@@ -10,6 +9,7 @@ const router = express.Router();
 // ✅ PUBLIC ROUTES (no middleware)
 //
 
+// Admin login by center code
 router.post('/organization/login', async (req, res) => {
   try {
     const { center_code, password } = req.body;
@@ -17,7 +17,7 @@ router.post('/organization/login', async (req, res) => {
     const user = await User.findOne({
       login_username: center_code,
       login_password: password
-    }).populate('organization_id');
+    }).populate('instituteId');
 
     if (!user) return res.status(401).json({ message: 'invalid' });
 
@@ -28,12 +28,11 @@ router.post('/organization/login', async (req, res) => {
       message: 'success',
       user_id: user._id,
       user_name: user.name,
-      user_type: user.type,
-      organization_id: user.organization_id._id,
-      organization_title: user.organization_id.organization_title,
-      center_head_name: user.organization_id.center_head_name,
-      center_code: user.organization_id.center_code,
-      theme_color: user.organization_id.theme_color
+      user_role: user.role,
+      institute_id: user.instituteId._id,
+      institute_name: user.instituteId.name,
+      center_code: user.login_username,
+      theme_color: user.theme?.primaryColor || '#10B981'
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -41,6 +40,7 @@ router.post('/organization/login', async (req, res) => {
   }
 });
 
+// General user login
 router.post('/user/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -48,7 +48,7 @@ router.post('/user/login', async (req, res) => {
     const user = await User.findOne({
       login_username: username,
       login_password: password
-    }).populate('organization_id');
+    }).populate('instituteId');
 
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
@@ -59,10 +59,10 @@ router.post('/user/login', async (req, res) => {
       message: 'success',
       user_id: user._id,
       user_name: user.name,
-      user_type: user.type,
-      organization_id: user.organization_id._id,
-      organization_title: user.organization_id.organization_title,
-      theme_color: user.organization_id.theme_color,
+      user_role: user.role,
+      institute_id: user.instituteId._id,
+      institute_name: user.instituteId.name,
+      theme_color: user.theme?.primaryColor || '#10B981',
       last_password_change: user.last_password_change || null
     });
   } catch (err) {
@@ -71,6 +71,7 @@ router.post('/user/login', async (req, res) => {
   }
 });
 
+// Forgot password
 router.post('/organization/forgot-password', async (req, res) => {
   try {
     const { center_code, mobile } = req.body;
@@ -89,6 +90,7 @@ router.post('/organization/forgot-password', async (req, res) => {
   }
 });
 
+// Reset password
 router.post('/organization/reset-password/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -107,11 +109,12 @@ router.post('/organization/reset-password/:id', async (req, res) => {
   }
 });
 
+// Register new user under institute
 router.post('/register', async (req, res) => {
-  const { name, password, mobile, type, organization_id } = req.body;
+  const { name, password, mobile, role = 'staff', institute_id } = req.body;
 
-  if (!organization_id) {
-    return res.status(400).json({ success: false, message: 'organization_id is required' });
+  if (!institute_id) {
+    return res.status(400).json({ success: false, message: 'institute_id is required' });
   }
 
   try {
@@ -121,11 +124,11 @@ router.post('/register', async (req, res) => {
     const newUser = new User({
       name,
       mobile,
-      type,
+      role,
       login_username: mobile,
       login_password: password,
       user_uuid: uuid(),
-      organization_id
+      instituteId: institute_id
     });
 
     await newUser.save();
@@ -136,22 +139,17 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// ✅ PUBLIC: Get users by org_id (moved above middleware)
-router.get('/GetUserList/:organization_id', async (req, res) => {
-  const { organization_id } = req.params;
+// Get users by instituteId
+router.get('/GetUserList/:institute_id', async (req, res) => {
+  const { institute_id } = req.params;
   try {
-    const users = await User.find({ organization_id });
+    const users = await User.find({ instituteId: institute_id });
     res.json(users.length ? { success: true, result: users } : { success: false, message: 'No users found' });
   } catch (err) {
     console.error('Error fetching users:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-//
-// ✅ PROTECTED ROUTES (require resolved org context)
-//
-router.use(resolveOrganization);
 
 // Get user by ID
 router.get('/:id', async (req, res) => {
@@ -180,12 +178,12 @@ router.delete('/:id', async (req, res) => {
 
 // Update user
 router.put('/:id', async (req, res) => {
-  const { name, mobile, type, password } = req.body;
+  const { name, mobile, role, password } = req.body;
 
   try {
     const updatedUser = await User.findOneAndUpdate(
       { _id: req.params.id },
-      { name, mobile, type, password },
+      { name, mobile, role, login_password: password },
       { new: true }
     );
 
