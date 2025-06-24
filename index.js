@@ -25,13 +25,18 @@ mongoose.connect(process.env.MONGO_URI, {
 
 // ✅ Root path check
 app.get('/', (req, res) => {
-  const host = req.headers.host;
-  if (!host || host.split('.').length < 3) {
-    res.send('✅ API is running on root domain...');
-  } else {
+  const host = req.headers.host || '';
+
+  const baseDomains = ['onrender.com', 'render.com']; 
+  const isSubdomain = baseDomains.some(base =>
+    host.endsWith(base) && host.split('.').length > base.split('.').length + 1
+  );
+
+  if (isSubdomain) {
     res.send('🌐 Subdomain detected. Use frontend interface.');
+  } else {
+    res.send('✅ API is running...');
   }
-  res.send('✅ API is running...');
 });
 
 
