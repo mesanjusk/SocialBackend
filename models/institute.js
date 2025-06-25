@@ -4,8 +4,9 @@ const { v4: uuidv4 } = require('uuid');
 const instituteSchema = new mongoose.Schema({
   uuid: {
     type: String,
-    default: () => uuidv4(), // ✅ Ensures new UUID per record
-    unique: true
+    default: () => uuidv4(),
+    unique: true,
+    required: true
   },
   institute_title: {
     type: String,
@@ -35,18 +36,9 @@ const instituteSchema = new mongoose.Schema({
     unique: true
   },
   theme: {
-    color: {
-      type: String,
-      default: '#10B981'
-    },
-    logo: {
-      type: String,
-      default: ''
-    },
-    favicon: {
-      type: String,
-      default: ''
-    }
+    color: { type: String, default: '#10B981' },
+    logo: { type: String, default: '' },
+    favicon: { type: String, default: '' }
   },
   status: {
     type: String,
@@ -58,32 +50,14 @@ const instituteSchema = new mongoose.Schema({
     enum: ['free', 'trial', 'paid'],
     default: 'trial'
   },
-  whiteLabel: {
-    type: Boolean,
-    default: false
-  },
-  modulesEnabled: {
-    type: [String],
-    default: []
-  },
-  users: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
+  whiteLabel: { type: Boolean, default: false },
+  modulesEnabled: { type: [String], default: [] },
+  users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  createdAt: { type: Date, default: Date.now },
   trialExpiresAt: {
     type: Date,
-    default: function () {
-      return new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-    }
+    default: () => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
   }
 });
 
