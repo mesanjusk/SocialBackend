@@ -49,7 +49,7 @@ router.post('/user/login', async (req, res) => {
     const user = await User.findOne({
       login_username: username,
       login_password: password
-    }).populate('instituteId');
+    }).populate('institute_uuid');
 
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
@@ -61,8 +61,9 @@ router.post('/user/login', async (req, res) => {
       user_id: user._id,
       user_name: user.name,
       user_role: user.role,
-      institute_id: user.instituteId._id,
-      institute_name: user.instituteId.name,
+      login_username: user.login_username,
+      institute_id: user.institute_uuid._id,
+      institute_name: user.institute_uuid.name,
       theme_color: user.theme?.primaryColor || '#10B981',
       last_password_change: user.last_password_change || null
     });
@@ -71,6 +72,7 @@ router.post('/user/login', async (req, res) => {
     res.status(500).json({ message: 'server_error' });
   }
 });
+
 
 // Forgot password
 router.post('/institute/forgot-password', async (req, res) => {
@@ -144,7 +146,7 @@ router.post('/register', async (req, res) => {
 router.get('/GetUserList/:institute_id', async (req, res) => {
   const { institute_id } = req.params;
   try {
-    const users = await User.find({ instituteId: institute_id });
+    const users = await User.find({ institute_uuid: institute_id });
     res.json(users.length ? { success: true, result: users } : { success: false, message: 'No users found' });
   } catch (err) {
     console.error('Error fetching users:', err);

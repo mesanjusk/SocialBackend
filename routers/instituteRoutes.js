@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
-const bcrypt = require('bcryptjs');
 
 const Institute = require('../models/institute');
 const User = require('../models/User');
@@ -31,12 +30,19 @@ router.post('/signup', async (req, res) => {
 
     const email = `${institute_call_number}@signup.bt`.toLowerCase();
 
+    // Check if user with same email or center code already exists
     const existingUser = await User.findOne({
       $or: [{ email }, { login_username: center_code }]
     });
 
     if (existingUser) {
       return res.json({ message: 'exist' });
+    }
+
+    // Optional: check if mobile number is already registered
+    const existingMobile = await User.findOne({ mobile: String(institute_call_number) });
+    if (existingMobile) {
+      return res.json({ message: 'duplicate_call_number' });
     }
 
     const trialExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
@@ -66,18 +72,16 @@ router.post('/signup', async (req, res) => {
 
     await newInstitute.save();
 
-    // Step 2: Create Admin User with same institute_uuid
-    const hashedPassword = await bcrypt.hash(center_code, 10);
-
+    // Step 2: Create Admin User
     const newUser = new User({
       user_uuid: uuidv4(),
       name: center_head_name,
       email,
       mobile: String(institute_call_number),
       login_username: center_code,
-      login_password: hashedPassword,
+      login_password: center_code,
       role: 'admin',
-      institute_uuid: instituteUUID, // ✅ Matching field
+      institute_uuid: instituteUUID,
       isTrial: true,
       trialExpiresAt: trialExpiry,
       theme: {
@@ -88,7 +92,7 @@ router.post('/signup', async (req, res) => {
 
     await newUser.save();
 
-    // Step 3: Link user in Institute (optional)
+    // Step 3: Link user in Institute
     newInstitute.users = [newUser._id];
     newInstitute.createdBy = newUser._id;
     await newInstitute.save();
@@ -99,7 +103,7 @@ router.post('/signup', async (req, res) => {
       institute_uuid: newInstitute.institute_uuid,
       center_code,
       theme_color,
-      trialExpiresAt
+      trialExpiresAt: trialExpiry
     });
 
   } catch (err) {

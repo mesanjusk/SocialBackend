@@ -4,6 +4,8 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const bodyParser = require('body-parser');
+const otpRoutes = require('./routers/otpRoutes');
 
 dotenv.config();
 
@@ -12,6 +14,7 @@ app.use(cors());
 app.use(express.json());
 app.use(helmet());
 app.use(morgan('dev'));
+app.use(bodyParser.json());
 
 // ✅ MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
@@ -39,6 +42,7 @@ app.get('/', (req, res) => {
   }
 });
 
+app.use('/api', otpRoutes);
 app.use('/api/institute', require('./routers/instituteRoutes'));
 app.use('/api/auth', require('./routers/authRoutes'));
 app.use('/api/enquiry', require('./routers/enquiryRoutes'));

@@ -18,12 +18,12 @@ const instituteSchema = new mongoose.Schema({
   center_code: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
   },
   institute_call_number: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
   },
   center_head_name: {
     type: String,
