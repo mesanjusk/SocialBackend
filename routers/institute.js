@@ -4,7 +4,8 @@ const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 
 const Institute = require('../models/institute');
-const User = require('../models/user');
+// Use correct case-sensitive path for the User model
+const User = require('../models/User');
 
 router.post('/signup', async (req, res) => {
   try {

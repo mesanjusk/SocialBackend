@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: uuid } = require('uuid');
-const User = require('../models/user');
+// Use correct case-sensitive path for the User model
+const User = require('../models/User');
 const Institute = require('../models/institute');
 
 const router = express.Router();
