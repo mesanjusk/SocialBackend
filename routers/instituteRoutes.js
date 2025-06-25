@@ -18,7 +18,7 @@ router.post('/signup', async (req, res) => {
       plan_type = 'trial'
     } = req.body;
 
-    // Validate required fields
+    // Validation
     if (
       !institute_title ||
       !institute_type ||
@@ -31,21 +31,18 @@ router.post('/signup', async (req, res) => {
 
     const email = `${institute_call_number}@signup.bt`;
 
-    // Check for existing user
     const existingUser = await User.findOne({
       $or: [{ email }, { login_username: center_code }]
     });
 
-    if (existingUser) {
-      return res.json({ message: 'exist' });
-    }
+    if (existingUser) return res.json({ message: 'exist' });
 
-    const trialExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
-    const instituteUUID = uuidv4();
+    const trialExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    const instituteUUID = uuidv4(); // ✅ properly assign here
 
-    // Create Institute
+    // 1. Create Institute
     const newInstitute = new Institute({
-      institute_uuid: instituteUUID, // ✅ Correct field
+      institute_uuid: instituteUUID, // ✅ matches schema and index
       institute_title,
       institute_type,
       center_code,
@@ -66,7 +63,7 @@ router.post('/signup', async (req, res) => {
 
     await newInstitute.save();
 
-    // Create Admin User
+    // 2. Create Admin User
     const hashedPassword = await bcrypt.hash(center_code, 10);
 
     const newUser = new User({
@@ -77,7 +74,7 @@ router.post('/signup', async (req, res) => {
       login_username: center_code,
       login_password: hashedPassword,
       role: 'admin',
-      organization_id: instituteUUID, // this links user to institute
+      instituteId: newInstitute._id, // ✅ matches Mongoose schema
       isTrial: true,
       trialExpiresAt: trialExpiry,
       theme: {
@@ -88,13 +85,10 @@ router.post('/signup', async (req, res) => {
 
     await newUser.save();
 
-    // Associate user with institute
-    newInstitute.users = newInstitute.users || [];
     newInstitute.users.push(newUser._id);
     newInstitute.createdBy = newUser._id;
     await newInstitute.save();
 
-    // Final response
     res.json({
       message: 'success',
       institute_title,

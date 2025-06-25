@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const instituteSchema = new mongoose.Schema({
   uuid: {
     type: String,
-    default: uuidv4,
+    default: () => uuidv4(), // ✅ Ensures new UUID per record
     unique: true
   },
   institute_title: {
