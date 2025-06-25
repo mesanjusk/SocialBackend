@@ -29,10 +29,9 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // Generate email from mobile number
     const email = `${institute_call_number}@signup.bt`;
 
-    // Check if user already exists
+    // Check for existing user
     const existingUser = await User.findOne({
       $or: [{ email }, { login_username: center_code }]
     });
@@ -41,13 +40,11 @@ router.post('/signup', async (req, res) => {
       return res.json({ message: 'exist' });
     }
 
-    // Trial expiry: 14 days from now
+    // Trial period
     const trialExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-    const instituteUUID = uuidv4();
 
-    // 1. Create Institute
+    // Create Institute
     const newInstitute = new Institute({
-      uuid: instituteUUID,
       institute_title,
       institute_type,
       center_code,
@@ -56,6 +53,7 @@ router.post('/signup', async (req, res) => {
       contactEmail: email,
       trialExpiresAt: trialExpiry,
       status: 'trial',
+      plan_type,
       theme: {
         color: theme_color,
         logo: '',
@@ -68,7 +66,7 @@ router.post('/signup', async (req, res) => {
 
     await newInstitute.save();
 
-    // 2. Create Admin User
+    // Create Admin User
     const hashedPassword = await bcrypt.hash(center_code, 10);
 
     const newUser = new User({
@@ -90,20 +88,15 @@ router.post('/signup', async (req, res) => {
 
     await newUser.save();
 
-    // Ensure users array exists before pushing
-    if (!newInstitute.users) {
-      newInstitute.users = [];
-    }
+    // Update Institute with user refs
     newInstitute.users.push(newUser._id);
     newInstitute.createdBy = newUser._id;
-
     await newInstitute.save();
 
-    // Send success response
     res.json({
       message: 'success',
       institute_title: newInstitute.institute_title,
-      institute_id: newInstitute.uuid,
+      institute_id: newInstitute.uuid, // ✅ public-safe UUID
       center_code,
       theme_color,
       trialExpiresAt: trialExpiry
