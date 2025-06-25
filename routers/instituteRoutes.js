@@ -18,7 +18,7 @@ router.post('/signup', async (req, res) => {
       plan_type = 'trial'
     } = req.body;
 
-    // Basic validation
+    // Validation
     if (
       !institute_title ||
       !institute_type ||
@@ -29,10 +29,8 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // Generate email from mobile number
     const email = `${institute_call_number}@signup.bt`;
 
-    // Check if user already exists
     const existingUser = await User.findOne({
       $or: [{ email }, { login_username: center_code }]
     });
@@ -41,7 +39,6 @@ router.post('/signup', async (req, res) => {
       return res.json({ message: 'exist' });
     }
 
-    // Trial expiry: 14 days from now
     const trialExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
     const instituteUUID = uuidv4();
 
@@ -55,8 +52,8 @@ router.post('/signup', async (req, res) => {
       center_head_name,
       contactEmail: email,
       trialExpiresAt: trialExpiry,
-      status: 'trial',
       plan_type,
+      status: 'trial',
       theme: {
         color: theme_color,
         logo: '',
@@ -80,7 +77,7 @@ router.post('/signup', async (req, res) => {
       login_username: center_code,
       login_password: hashedPassword,
       role: 'admin',
-      instituteId: instituteUUID, // use UUID instead of Mongo ObjectId
+      instituteId: instituteUUID, // ✅ UUID, not ObjectId
       isTrial: true,
       trialExpiresAt: trialExpiry,
       theme: {
@@ -91,6 +88,7 @@ router.post('/signup', async (req, res) => {
 
     await newUser.save();
 
+    // 3. Link user back to institute (optional since we store UUID in user)
     newInstitute.users.push(newUser._id);
     newInstitute.createdBy = newUser._id;
     await newInstitute.save();
@@ -98,7 +96,7 @@ router.post('/signup', async (req, res) => {
     res.json({
       message: 'success',
       institute_title: newInstitute.institute_title,
-      institute_id: newInstitute.institute_uuid,
+      institute_uuid: newInstitute.institute_uuid,
       center_code,
       theme_color,
       trialExpiresAt: trialExpiry
