@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const instituteSchema = new mongoose.Schema({
   institute_uuid: {
     type: String,
-    default: uuidv4,
+    default: () => uuidv4(), // ✅ ensure dynamic UUID generation
     unique: true
   },
   institute_title: {
@@ -81,9 +81,7 @@ const instituteSchema = new mongoose.Schema({
   },
   trialExpiresAt: {
     type: Date,
-    default: function () {
-      return new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days from now
-    }
+    default: () => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
   }
 });
 
