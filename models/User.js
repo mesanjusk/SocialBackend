@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const userSchema = new mongoose.Schema({
   user_uuid: {
     type: String,
-    default: uuidv4,
+    default: () => uuidv4(),
     unique: true
   },
 
@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     unique: true,
-    sparse: true // allows null but ensures uniqueness if present
+    sparse: true
   },
 
   mobile: {
@@ -33,7 +33,7 @@ const userSchema = new mongoose.Schema({
 
   login_password: {
     type: String,
-    required: true // Store hashed password using bcrypt
+    required: true
   },
 
   role: {
@@ -42,8 +42,8 @@ const userSchema = new mongoose.Schema({
     default: 'admin'
   },
 
-  // Updated: UUID string instead of ObjectId
-  instituteId: {
+  // ✅ Store UUID of the institute (not ObjectId)
+  institute_uuid: {
     type: String,
     required: true
   },

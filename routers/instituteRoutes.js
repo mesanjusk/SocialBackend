@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const Institute = require('../models/institute');
 const User = require('../models/User');
 
+// POST /api/institute/signup
 router.post('/signup', async (req, res) => {
   try {
     const {
@@ -18,7 +19,6 @@ router.post('/signup', async (req, res) => {
       plan_type = 'trial'
     } = req.body;
 
-    // Validation
     if (
       !institute_title ||
       !institute_type ||
@@ -29,7 +29,7 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const email = `${institute_call_number}@signup.bt`;
+    const email = `${institute_call_number}@signup.bt`.toLowerCase();
 
     const existingUser = await User.findOne({
       $or: [{ email }, { login_username: center_code }]
@@ -42,7 +42,7 @@ router.post('/signup', async (req, res) => {
     const trialExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
     const instituteUUID = uuidv4();
 
-    // 1. Create Institute
+    // Step 1: Create Institute
     const newInstitute = new Institute({
       institute_uuid: instituteUUID,
       institute_title,
@@ -66,7 +66,7 @@ router.post('/signup', async (req, res) => {
 
     await newInstitute.save();
 
-    // 2. Create Admin User
+    // Step 2: Create Admin User with same institute_uuid
     const hashedPassword = await bcrypt.hash(center_code, 10);
 
     const newUser = new User({
@@ -77,7 +77,7 @@ router.post('/signup', async (req, res) => {
       login_username: center_code,
       login_password: hashedPassword,
       role: 'admin',
-      instituteId: instituteUUID, // ✅ UUID, not ObjectId
+      institute_uuid: instituteUUID, // ✅ Matching field
       isTrial: true,
       trialExpiresAt: trialExpiry,
       theme: {
@@ -88,8 +88,8 @@ router.post('/signup', async (req, res) => {
 
     await newUser.save();
 
-    // 3. Link user back to institute (optional since we store UUID in user)
-    newInstitute.users.push(newUser._id);
+    // Step 3: Link user in Institute (optional)
+    newInstitute.users = [newUser._id];
     newInstitute.createdBy = newUser._id;
     await newInstitute.save();
 
@@ -99,7 +99,7 @@ router.post('/signup', async (req, res) => {
       institute_uuid: newInstitute.institute_uuid,
       center_code,
       theme_color,
-      trialExpiresAt: trialExpiry
+      trialExpiresAt
     });
 
   } catch (err) {
