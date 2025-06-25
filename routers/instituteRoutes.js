@@ -18,27 +18,34 @@ router.post('/signup', async (req, res) => {
       plan_type = 'trial'
     } = req.body;
 
-    // Validate required fields
-    if (!institute_title || !institute_type || !center_code || !institute_call_number || !center_head_name) {
+    // Basic validation
+    if (
+      !institute_title ||
+      !institute_type ||
+      !center_code ||
+      !institute_call_number ||
+      !center_head_name
+    ) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
+    // Generate email from mobile number
     const email = `${institute_call_number}@signup.bt`;
 
-    // Check for existing user
+    // Check if user already exists
     const existingUser = await User.findOne({
       $or: [{ email }, { login_username: center_code }]
     });
 
     if (existingUser) {
-      return res.status(409).json({ message: 'exist' });
+      return res.json({ message: 'exist' });
     }
 
-    // Generate UUID and trial expiry
-    const instituteUUID = uuidv4();
+    // Trial expiry: 14 days from now
     const trialExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    const instituteUUID = uuidv4();
 
-    // Create Institute
+    // 1. Create Institute
     const newInstitute = new Institute({
       uuid: instituteUUID,
       institute_title,
@@ -49,7 +56,6 @@ router.post('/signup', async (req, res) => {
       contactEmail: email,
       trialExpiresAt: trialExpiry,
       status: 'trial',
-      plan_type,
       theme: {
         color: theme_color,
         logo: '',
@@ -57,13 +63,14 @@ router.post('/signup', async (req, res) => {
       },
       whiteLabel: false,
       modulesEnabled: [],
-      users: []
+      users: [] // fallback-safe
     });
 
     await newInstitute.save();
 
-    // Create hashed password and admin user
+    // 2. Create Admin User
     const hashedPassword = await bcrypt.hash(center_code, 10);
+
     const newUser = new User({
       user_uuid: uuidv4(),
       name: center_head_name,
@@ -72,7 +79,7 @@ router.post('/signup', async (req, res) => {
       login_username: center_code,
       login_password: hashedPassword,
       role: 'admin',
-      instituteId: newInstitute._id, // ✅ Mongoose ID reference
+      instituteId: newInstitute._id,
       isTrial: true,
       trialExpiresAt: trialExpiry,
       theme: {
@@ -83,18 +90,23 @@ router.post('/signup', async (req, res) => {
 
     await newUser.save();
 
-    // Link user to institute
+    // Ensure users array exists before pushing
+    if (!newInstitute.users) {
+      newInstitute.users = [];
+    }
     newInstitute.users.push(newUser._id);
     newInstitute.createdBy = newUser._id;
+
     await newInstitute.save();
 
-    return res.json({
+    // Send success response
+    res.json({
       message: 'success',
-      institute_title,
-      institute_id: instituteUUID,
+      institute_title: newInstitute.institute_title,
+      institute_id: newInstitute.uuid,
       center_code,
       theme_color,
-      trialExpiresAt
+      trialExpiresAt: trialExpiry
     });
 
   } catch (err) {
