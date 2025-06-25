@@ -42,9 +42,9 @@ const userSchema = new mongoose.Schema({
     default: 'admin'
   },
 
+  // Updated: UUID string instead of ObjectId
   instituteId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Institute',
+    type: String,
     required: true
   },
 
