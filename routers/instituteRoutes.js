@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 
 const Institute = require('../models/institute');
-const User = require('../models/User');
+const User = require('../models/user');
 
 router.post('/signup', async (req, res) => {
   try {
