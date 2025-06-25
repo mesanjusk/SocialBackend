@@ -2,11 +2,11 @@ const express = require('express');
 const router = express.Router();
 const Batch = require('../models/Batch');
 
-// 📥 GET all batches (optionally filtered by organization_id)
+// 📥 GET all batches (optionally filtered by institute_id)
 router.get('/', async (req, res) => {
   try {
-    const { organization_id } = req.query;
-    const query = organization_id ? { organization_id } : {};
+    const { institute_id } = req.query;
+    const query = institute_id ? { institute_id } : {};
     const batches = await Batch.find(query).lean();
     res.status(200).json(batches);
   } catch (err) {
@@ -18,12 +18,12 @@ router.get('/', async (req, res) => {
 // ➕ POST new batch
 router.post('/', async (req, res) => {
   try {
-    const { organization_id, name, timing } = req.body;
-    if (!organization_id || !name) {
-      return res.status(400).json({ error: 'organization_id and name are required' });
+    const { institute_id, name, timing } = req.body;
+    if (!institute_id || !name) {
+      return res.status(400).json({ error: 'institute_id and name are required' });
     }
 
-    const newBatch = new Batch({ organization_id, name, timing });
+    const newBatch = new Batch({ institute_id, name, timing });
     await newBatch.save();
     res.status(201).json(newBatch);
   } catch (err) {

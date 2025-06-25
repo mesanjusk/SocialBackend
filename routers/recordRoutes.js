@@ -2,13 +2,13 @@ const express = require('express');
 const router = express.Router();
 const Record = require('../models/Record');
 
-// Get records (enquiry/admission) for a specific organization
-router.get('/org/:organization_id', async (req, res) => {
+// Get records (enquiry/admission) for a specific institute
+router.get('/org/:institute_id', async (req, res) => {
   try {
-    const { organization_id } = req.params;
+    const { institute_id } = req.params;
     const { type } = req.query;
 
-    const filter = { organization_uuid: organization_id }; 
+    const filter = { institute_uuid: institute_id }; 
     if (type) filter.type = type;
 
     const data = await Record.find(filter).sort({ createdAt: -1 });
@@ -23,8 +23,8 @@ router.get('/org/:organization_id', async (req, res) => {
 // Create new record
 router.post('/', async (req, res) => {
   try {
-    const { organization_uuid, type } = req.body;
-    if (!organization_uuid || type !== 'enquiry') {
+    const { institute_uuid, type } = req.body;
+    if (!institute_uuid || type !== 'enquiry') {
       return res.status(400).json({ error: 'Only enquiry records are allowed initially' });
     }
 
@@ -40,9 +40,9 @@ router.post('/', async (req, res) => {
 router.post('/convert/:uuid', async (req, res) => {
   try {
     const { uuid } = req.params;
-    const { organization_uuid, admissionData } = req.body;
+    const { institute_uuid, admissionData } = req.body;
 
-    const record = await Record.findOne({ uuid, organization_uuid });
+    const record = await Record.findOne({ uuid, institute_uuid });
 
     if (!record) {
       return res.status(404).json({ error: 'Enquiry not found' });

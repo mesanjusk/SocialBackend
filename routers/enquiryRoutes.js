@@ -2,13 +2,13 @@ const express = require('express');
 const router = express.Router();
 const Record = require('../models/Record');
 
-// 🔹 Get all enquiries for a specific organization
-router.get('/org/:organization_id', async (req, res) => {
+// 🔹 Get all enquiries for a specific institute
+router.get('/org/:institute_id', async (req, res) => {
   try {
-    const { organization_id } = req.params;
+    const { institute_id } = req.params;
     const data = await Record.find({
       type: 'enquiry',
-      organization_id
+      institute_id
     }).sort({ createdAt: -1 });
 
     res.json(data);
@@ -21,9 +21,9 @@ router.get('/org/:organization_id', async (req, res) => {
 // 🔹 Create new enquiry
 router.post('/', async (req, res) => {
   try {
-    const { organization_id } = req.body;
-    if (!organization_id) {
-      return res.status(400).json({ error: 'organization_id is required' });
+    const { institute_id } = req.body;
+    if (!institute_id) {
+      return res.status(400).json({ error: 'institute_id is required' });
     }
 
     const newEnquiry = new Record({ ...req.body, type: 'enquiry' });

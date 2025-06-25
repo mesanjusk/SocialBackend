@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
-const organizationSchema = new mongoose.Schema({
-  organization_uuid: {
+const instituteSchema = new mongoose.Schema({
+  institute_uuid: {
     type: String,
     default: () => uuidv4(),
     unique: true,
@@ -12,15 +12,15 @@ const organizationSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  organization_title: {
+  institute_title: {
     type: String,
     required: true,
   },
-  organization_type: {
+  institute_type: {
     type: String,
     required: true,
   },
-  organization_call_number: {
+  institute_call_number: {
     type: Number,
     required: true,
     unique: true,
@@ -33,7 +33,7 @@ const organizationSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  organization_logo: {
+  institute_logo: {
     type: String,
     default: '',
   },
@@ -75,4 +75,4 @@ const organizationSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model('Organization', organizationSchema);
+module.exports = mongoose.model('institute', instituteSchema);

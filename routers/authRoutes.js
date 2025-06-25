@@ -11,7 +11,7 @@ const router = express.Router();
 //
 
 // Admin login by center code
-router.post('/organization/login', async (req, res) => {
+router.post('/institute/login', async (req, res) => {
   try {
     const { center_code, password } = req.body;
 
@@ -73,7 +73,7 @@ router.post('/user/login', async (req, res) => {
 });
 
 // Forgot password
-router.post('/organization/forgot-password', async (req, res) => {
+router.post('/institute/forgot-password', async (req, res) => {
   try {
     const { center_code, mobile } = req.body;
 
@@ -92,7 +92,7 @@ router.post('/organization/forgot-password', async (req, res) => {
 });
 
 // Reset password
-router.post('/organization/reset-password/:id', async (req, res) => {
+router.post('/institute/reset-password/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { new_password } = req.body;

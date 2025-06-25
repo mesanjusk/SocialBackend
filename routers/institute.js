@@ -10,8 +10,8 @@ const User = require('../models/User');
 router.post('/signup', async (req, res) => {
   try {
     const {
-      organization_title,       // => name
-      organization_type,        // => type
+      institute_title,       // => name
+      institute_type,        // => type
       center_code,              // => password & login
       mobile_number,            // => email substitute
       center_head_name,         // => admin name
@@ -19,11 +19,11 @@ router.post('/signup', async (req, res) => {
       plan_type = 'trial'
     } = req.body;
 
-    if (!organization_title || !organization_type || !center_code || !mobile_number || !center_head_name) {
+    if (!institute_title || !institute_type || !center_code || !mobile_number || !center_head_name) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const existing = await Institute.findOne({ name: organization_title });
+    const existing = await Institute.findOne({ name: institute_title });
     if (existing) return res.json({ message: 'exist' });
 
     const existingEmail = await User.findOne({ email: `${mobile_number}@signup.bt` });
@@ -39,7 +39,7 @@ router.post('/signup', async (req, res) => {
       email: `${mobile_number}@signup.bt`,
       passwordHash: hashedPassword,
       role: 'admin',
-      organization_id: uuid, // backward-compatible field
+      institute_id: uuid, // backward-compatible field
       instituteId: uuid,     // new standard field
       isTrial: true,
       trialExpiresAt: trialExpiry,
@@ -53,8 +53,8 @@ router.post('/signup', async (req, res) => {
     // Step 2: Create Institute
     const newInstitute = new Institute({
       uuid,
-      name: organization_title,
-      type: organization_type,
+      name: institute_title,
+      type: institute_type,
       contactEmail: `${mobile_number}@signup.bt`,
       createdBy: adminUser._id,
       trialExpiresAt: trialExpiry,
@@ -73,8 +73,8 @@ router.post('/signup', async (req, res) => {
 
     res.json({
       message: 'success',
-      organization_title,
-      organization_id: uuid,
+      institute_title,
+      institute_id: uuid,
       center_code,
       theme_color
     });

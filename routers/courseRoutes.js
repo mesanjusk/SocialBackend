@@ -2,11 +2,11 @@ const express = require('express');
 const Course = require('../models/Course');
 const router = express.Router();
 
-// ✅ GET courses (optionally filter by organization_id)
+// ✅ GET courses (optionally filter by institute_id)
 router.get('/', async (req, res) => {
   try {
-    const { organization_id } = req.query;
-    const query = organization_id ? { organization_id } : {};
+    const { institute_id } = req.query;
+    const query = institute_id ? { institute_id } : {};
     const courses = await Course.find(query);
     res.json(courses);
   } catch (err) {
@@ -18,9 +18,9 @@ router.get('/', async (req, res) => {
 // ✅ POST new course
 router.post('/', async (req, res) => {
   try {
-    const { name, organization_id } = req.body;
-    if (!name || !organization_id) {
-      return res.status(400).json({ error: 'name and organization_id are required' });
+    const { name, institute_id } = req.body;
+    if (!name || !institute_id) {
+      return res.status(400).json({ error: 'name and institute_id are required' });
     }
 
     const newCourse = new Course(req.body);
