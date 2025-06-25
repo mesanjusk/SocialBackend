@@ -29,9 +29,10 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
+    // Generate email from mobile number
     const email = `${institute_call_number}@signup.bt`;
 
-    // Check for existing user
+    // Check if user already exists
     const existingUser = await User.findOne({
       $or: [{ email }, { login_username: center_code }]
     });
@@ -40,11 +41,13 @@ router.post('/signup', async (req, res) => {
       return res.json({ message: 'exist' });
     }
 
-    // Trial period
+    // Trial expiry: 14 days from now
     const trialExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    const instituteUUID = uuidv4();
 
-    // Create Institute
+    // 1. Create Institute
     const newInstitute = new Institute({
+      institute_uuid: instituteUUID,
       institute_title,
       institute_type,
       center_code,
@@ -61,12 +64,12 @@ router.post('/signup', async (req, res) => {
       },
       whiteLabel: false,
       modulesEnabled: [],
-      users: [] // fallback-safe
+      users: []
     });
 
     await newInstitute.save();
 
-    // Create Admin User
+    // 2. Create Admin User
     const hashedPassword = await bcrypt.hash(center_code, 10);
 
     const newUser = new User({
@@ -77,7 +80,7 @@ router.post('/signup', async (req, res) => {
       login_username: center_code,
       login_password: hashedPassword,
       role: 'admin',
-      instituteId: newInstitute._id,
+      instituteId: instituteUUID, // use UUID instead of Mongo ObjectId
       isTrial: true,
       trialExpiresAt: trialExpiry,
       theme: {
@@ -88,7 +91,6 @@ router.post('/signup', async (req, res) => {
 
     await newUser.save();
 
-    // Update Institute with user refs
     newInstitute.users.push(newUser._id);
     newInstitute.createdBy = newUser._id;
     await newInstitute.save();
@@ -96,7 +98,7 @@ router.post('/signup', async (req, res) => {
     res.json({
       message: 'success',
       institute_title: newInstitute.institute_title,
-      institute_id: newInstitute.uuid, // ✅ public-safe UUID
+      institute_id: newInstitute.institute_uuid,
       center_code,
       theme_color,
       trialExpiresAt: trialExpiry

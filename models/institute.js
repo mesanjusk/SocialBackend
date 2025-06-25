@@ -2,9 +2,9 @@ const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
 const instituteSchema = new mongoose.Schema({
-  uuid: {
+  institute_uuid: {
     type: String,
-    default: () => uuidv4(), // ✅ ensures a fresh UUID per document
+    default: uuidv4,
     unique: true
   },
   institute_title: {
@@ -81,7 +81,9 @@ const instituteSchema = new mongoose.Schema({
   },
   trialExpiresAt: {
     type: Date,
-    default: () => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+    default: function () {
+      return new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days from now
+    }
   }
 });
 
