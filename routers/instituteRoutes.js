@@ -18,6 +18,7 @@ router.post('/signup', async (req, res) => {
       plan_type = 'trial'
     } = req.body;
 
+    // Basic validation
     if (
       !institute_title ||
       !institute_type ||
@@ -28,7 +29,10 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
+    // Generate email from mobile number
     const email = `${institute_call_number}@signup.bt`;
+
+    // Check if user already exists
     const existingUser = await User.findOne({
       $or: [{ email }, { login_username: center_code }]
     });
@@ -37,6 +41,7 @@ router.post('/signup', async (req, res) => {
       return res.json({ message: 'exist' });
     }
 
+    // Trial expiry: 14 days from now
     const trialExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
     const instituteUUID = uuidv4();
 
@@ -57,7 +62,8 @@ router.post('/signup', async (req, res) => {
         favicon: ''
       },
       whiteLabel: false,
-      modulesEnabled: []
+      modulesEnabled: [],
+      users: [] // fallback-safe
     });
 
     await newInstitute.save();
@@ -69,7 +75,7 @@ router.post('/signup', async (req, res) => {
       user_uuid: uuidv4(),
       name: center_head_name,
       email,
-      mobile: institute_call_number,
+      mobile: String(institute_call_number),
       login_username: center_code,
       login_password: hashedPassword,
       role: 'admin',
@@ -84,10 +90,16 @@ router.post('/signup', async (req, res) => {
 
     await newUser.save();
 
+    // Ensure users array exists before pushing
+    if (!newInstitute.users) {
+      newInstitute.users = [];
+    }
     newInstitute.users.push(newUser._id);
     newInstitute.createdBy = newUser._id;
+
     await newInstitute.save();
 
+    // Send success response
     res.json({
       message: 'success',
       institute_title: newInstitute.institute_title,
