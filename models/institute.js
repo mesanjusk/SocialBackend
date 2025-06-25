@@ -51,7 +51,7 @@ const instituteSchema = new mongoose.Schema({
   },
   plan_type: {
     type: String,
-    enum: ['free', 'trial', 'paid'], // ✅ Updated enum
+    enum: ['free', 'trial', 'paid'],
     default: 'trial',
   },
   created_by: {
@@ -66,7 +66,7 @@ const instituteSchema = new mongoose.Schema({
     type: Date,
     default: function () {
       const now = new Date();
-      return new Date(now.setDate(now.getDate() + 14)); // ✅ 14 days after creation
+      return new Date(now.setDate(now.getDate() + 14));
     },
   },
   domains: {
