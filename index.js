@@ -39,13 +39,7 @@ app.get('/', (req, res) => {
   }
 });
 
-// ✅ All API routes
-
-
-// ✅ Institute-based architecture
-app.use('/api/organization', require('./routers/instituteRoutes')); // Institute APIs (Signup etc.)
-
-// Core modules
+app.use('/api/institute', require('./routers/instituteRoutes'));
 app.use('/api/auth', require('./routers/authRoutes'));
 app.use('/api/enquiry', require('./routers/enquiryRoutes'));
 app.use('/api/courses', require('./routers/courseRoutes'));
