@@ -18,7 +18,7 @@ router.post('/signup', async (req, res) => {
       plan_type = 'trial'
     } = req.body;
 
-    // Basic validation
+    // Validate required fields
     if (
       !institute_title ||
       !institute_type ||
@@ -29,10 +29,9 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // Generate email from mobile number
     const email = `${institute_call_number}@signup.bt`;
 
-    // Check if user already exists
+    // Check for existing user
     const existingUser = await User.findOne({
       $or: [{ email }, { login_username: center_code }]
     });
@@ -41,13 +40,12 @@ router.post('/signup', async (req, res) => {
       return res.json({ message: 'exist' });
     }
 
-    // Trial expiry: 14 days from now
-    const trialExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    const trialExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
     const instituteUUID = uuidv4();
 
-    // 1. Create Institute
+    // Create Institute
     const newInstitute = new Institute({
-      uuid: instituteUUID,
+      institute_uuid: instituteUUID, // ✅ Correct field
       institute_title,
       institute_type,
       center_code,
@@ -63,12 +61,12 @@ router.post('/signup', async (req, res) => {
       },
       whiteLabel: false,
       modulesEnabled: [],
-      users: [] // fallback-safe
+      users: []
     });
 
     await newInstitute.save();
 
-    // 2. Create Admin User
+    // Create Admin User
     const hashedPassword = await bcrypt.hash(center_code, 10);
 
     const newUser = new User({
@@ -79,7 +77,7 @@ router.post('/signup', async (req, res) => {
       login_username: center_code,
       login_password: hashedPassword,
       role: 'admin',
-      instituteId: instituteUUID,
+      organization_id: instituteUUID, // this links user to institute
       isTrial: true,
       trialExpiresAt: trialExpiry,
       theme: {
@@ -90,20 +88,17 @@ router.post('/signup', async (req, res) => {
 
     await newUser.save();
 
-    // Ensure users array exists before pushing
-    if (!newInstitute.users) {
-      newInstitute.users = [];
-    }
+    // Associate user with institute
+    newInstitute.users = newInstitute.users || [];
     newInstitute.users.push(newUser._id);
     newInstitute.createdBy = newUser._id;
-
     await newInstitute.save();
 
-    // Send success response
+    // Final response
     res.json({
       message: 'success',
-      institute_title: newInstitute.institute_title,
-      institute_id: newInstitute.uuid,
+      institute_title,
+      institute_id: instituteUUID,
       center_code,
       theme_color,
       trialExpiresAt: trialExpiry
