@@ -48,20 +48,6 @@ const userSchema = new mongoose.Schema({
     required: true
   },
 
-  isTrial: {
-    type: Boolean,
-    default: false
-  },
-
-  trialExpiresAt: {
-    type: Date
-  },
-
-  theme: {
-    primaryColor: { type: String, default: '#10B981' },
-    logoUrl: { type: String, default: '' }
-  },
-
   last_login_at: {
     type: Date,
     default: null
