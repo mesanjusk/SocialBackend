@@ -5,6 +5,11 @@ const User = require('../models/User');
 const Institute = require('../models/institute');
 
 const router = express.Router();
+const otpStore = {};
+
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 //
 // ✅ PUBLIC ROUTES (no middleware)
@@ -73,8 +78,6 @@ router.post('/user/login', async (req, res) => {
   }
 });
 
-
-// Forgot password
 router.post('/institute/forgot-password', async (req, res) => {
   try {
     const { center_code, mobile } = req.body;
@@ -86,7 +89,21 @@ router.post('/institute/forgot-password', async (req, res) => {
 
     if (!user) return res.status(404).json({ message: 'No matching user found' });
 
-    res.status(200).json({ message: 'verified', user_id: user._id });
+    const otp = generateOTP();
+
+    otpStore[mobile] = {
+      otp,
+      expiresAt: Date.now() + 5 * 60 * 1000,
+      user_id: user._id
+    };
+
+    console.log(`OTP for ${mobile} is ${otp}`);
+
+    res.status(200).json({
+      message: 'verified',
+      user_id: user._id,
+      otp 
+    });
   } catch (err) {
     console.error('Forgot password error:', err);
     res.status(500).json({ message: 'server_error' });
@@ -97,10 +114,14 @@ router.post('/institute/forgot-password', async (req, res) => {
 router.post('/institute/reset-password/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { new_password } = req.body;
+    const { old_password, new_password } = req.body;
 
     const user = await User.findById(id);
     if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (user.login_password !== old_password) {
+      return res.status(401).json({ message: 'Old password is incorrect' });
+    }
 
     user.login_password = new_password;
     await user.save();
@@ -111,6 +132,7 @@ router.post('/institute/reset-password/:id', async (req, res) => {
     res.status(500).json({ message: 'server_error' });
   }
 });
+
 
 // Register new user under institute
 router.post('/register', async (req, res) => {

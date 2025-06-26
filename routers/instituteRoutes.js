@@ -112,4 +112,25 @@ router.post('/signup', async (req, res) => {
   }
 });
 
+// GET institute by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const result = await Institute.findOne({ institute_uuid: req.params.id });
+    if (!result) return res.status(404).json({ error: 'Not found' });
+    res.json({ result });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// UPDATE institute profile
+router.put('/update/:id', async (req, res) => {
+  try {
+    const updated = await Institute.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json({ message: 'Updated successfully', updated });
+  } catch (err) {
+    res.status(500).json({ error: 'Update failed' });
+  }
+});
+
 module.exports = router;
