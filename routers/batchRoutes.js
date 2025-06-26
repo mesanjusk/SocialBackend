@@ -5,8 +5,8 @@ const Batch = require('../models/Batch');
 // 📥 GET all batches (optionally filtered by institute_id)
 router.get('/', async (req, res) => {
   try {
-    const { institute_id } = req.query;
-    const query = institute_id ? { institute_id } : {};
+    const { institute_uuid } = req.query;
+    const query = institute_uuid ? { institute_uuid } : {};
     const batches = await Batch.find(query).lean();
     res.status(200).json(batches);
   } catch (err) {
@@ -18,12 +18,12 @@ router.get('/', async (req, res) => {
 // ➕ POST new batch
 router.post('/', async (req, res) => {
   try {
-    const { institute_id, name, timing } = req.body;
-    if (!institute_id || !name) {
+    const { institute_uuid, name, timing } = req.body;
+    if (!institute_uuid || !name) {
       return res.status(400).json({ error: 'institute_id and name are required' });
     }
 
-    const newBatch = new Batch({ institute_id, name, timing });
+    const newBatch = new Batch({ institute_uuid, name, timing });
     await newBatch.save();
     res.status(201).json(newBatch);
   } catch (err) {

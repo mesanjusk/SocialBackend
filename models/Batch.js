@@ -12,7 +12,7 @@ const batchSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  institute_id: {
+  institute_uuid: {
     type: String,
     required: true,
     index: true

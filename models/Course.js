@@ -15,7 +15,7 @@ const courseSchema = new mongoose.Schema({
   courseFees: String,
   examFees: String,
   duration: String,
-  institute_id: {
+  institute_uuid: {
     type: String,
     required: true
   }

@@ -5,8 +5,8 @@ const router = express.Router();
 // ✅ GET courses (optionally filter by institute_id)
 router.get('/', async (req, res) => {
   try {
-    const { institute_id } = req.query;
-    const query = institute_id ? { institute_id } : {};
+    const { institute_uuid } = req.query;
+    const query = institute_uuid ? { institute_uuid } : {};
     const courses = await Course.find(query);
     res.json(courses);
   } catch (err) {
@@ -18,8 +18,8 @@ router.get('/', async (req, res) => {
 // ✅ POST new course
 router.post('/', async (req, res) => {
   try {
-    const { name, institute_id } = req.body;
-    if (!name || !institute_id) {
+    const { name, institute_uuid } = req.body;
+    if (!name || !institute_uuid) {
       return res.status(400).json({ error: 'name and institute_id are required' });
     }
 

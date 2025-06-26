@@ -24,41 +24,57 @@ router.get('/org/:institute_id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { institute_uuid, type } = req.body;
-    if (!institute_uuid || type !== 'enquiry') {
-      return res.status(400).json({ error: 'Only enquiry records are allowed initially' });
+    if (!institute_uuid || !['enquiry', 'admission'].includes(type)) {
+      return res.status(400).json({ error: 'Invalid or missing type' });
     }
 
     const newRecord = new Record(req.body);
     await newRecord.save();
     res.json(newRecord);
   } catch (err) {
-    console.error('Create enquiry failed:', err);
-    res.status(500).json({ error: 'Failed to save enquiry' });
+    console.error('Create record failed:', err);
+    res.status(500).json({ error: 'Failed to save record' });
   }
 });
+
 
 router.post('/convert/:uuid', async (req, res) => {
   try {
     const { uuid } = req.params;
     const { institute_uuid, admissionData } = req.body;
 
+    if (!institute_uuid || !admissionData) {
+      return res.status(400).json({ error: 'institute_uuid and admissionData are required' });
+    }
+
     const record = await Record.findOne({ uuid, institute_uuid });
 
     if (!record) {
       return res.status(404).json({ error: 'Enquiry not found' });
     }
+
+    if (record.type !== 'enquiry') {
+      return res.status(400).json({ error: 'Record is not an enquiry and cannot be converted' });
+    }
+
+    if (record.convertedToAdmission) {
+      return res.status(400).json({ error: 'This enquiry has already been converted to admission' });
+    }
+
+    // Perform conversion
     record.type = 'admission';
     record.convertedToAdmission = true;
-    record.admissionDetails.push(admissionData); 
+    record.admissionDetails.push(admissionData);
 
     await record.save();
 
-    res.json({ success: true, message: 'Converted to admission', record });
+    res.json({ success: true, message: 'Successfully converted to admission', record });
   } catch (err) {
     console.error('Conversion failed:', err);
     res.status(500).json({ error: 'Failed to convert to admission' });
   }
 });
+
 
 
 // Update record

@@ -3,7 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const recordSchema = new mongoose.Schema({
   uuid: { type: String, default: uuidv4 },
-  type: { type: String, enum: ['enquiry'], required: true }, 
+  type: { type: String, enum: ['enquiry', 'admission'], required: true }, 
   institute_uuid: { type: String, required: true }, 
 
   convertedToAdmission: { type: Boolean, default: false },
