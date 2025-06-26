@@ -56,6 +56,7 @@ app.use('/api/paymentmode', require('./routers/paymentModeRoutes'));
 
 // ✅ Upload route
 app.use('/api/upload', require('./uploadRoute'));
+app.use('/api/branding', require('./routers/brandingRoutes'));
 
 // 404 fallback
 app.use((req, res) => {

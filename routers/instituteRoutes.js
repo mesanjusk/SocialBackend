@@ -124,11 +124,43 @@ router.get('/:id', async (req, res) => {
 });
 
 // UPDATE institute profile
+// UPDATE institute profile with theme branding
 router.put('/update/:id', async (req, res) => {
   try {
-    const updated = await Institute.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const {
+      institute_title,
+      institute_type,
+      center_code,
+      institute_call_number,
+      center_head_name,
+      address,
+      email,
+      theme_color,
+      institute_logo,
+      theme_logo,
+      theme_favicon,
+    } = req.body;
+
+    const updateData = {
+      institute_title,
+      institute_type,
+      center_code,
+      institute_call_number,
+      center_head_name,
+      address,
+      contactEmail: email,
+      institute_logo: institute_logo || theme_logo || '',
+      theme: {
+        color: theme_color || '#10B981',
+        logo: theme_logo || institute_logo || '',
+        favicon: theme_favicon || '',
+      },
+    };
+
+    const updated = await Institute.findByIdAndUpdate(req.params.id, updateData, { new: true });
     res.json({ message: 'Updated successfully', updated });
   } catch (err) {
+    console.error('Update error:', err);
     res.status(500).json({ error: 'Update failed' });
   }
 });
