@@ -136,9 +136,9 @@ router.post('/institute/reset-password/:id', async (req, res) => {
 
 // Register new user under institute
 router.post('/register', async (req, res) => {
-  const { name, password, mobile, role = 'staff', institute_id } = req.body;
+  const { name, password, mobile, role, institute_uuid } = req.body;
 
-  if (!institute_id) {
+  if (!institute_uuid) {
     return res.status(400).json({ success: false, message: 'institute_id is required' });
   }
 
@@ -153,7 +153,7 @@ router.post('/register', async (req, res) => {
       login_username: mobile,
       login_password: password,
       user_uuid: uuid(),
-      instituteId: institute_id
+      institute_uuid: institute_uuid
     });
 
     await newUser.save();
