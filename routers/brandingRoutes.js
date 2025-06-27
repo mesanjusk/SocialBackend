@@ -20,8 +20,14 @@ router.get('/', async (req, res) => {
     });
 
     if (!institute) {
-      return res.status(404).json({ message: 'Institute not found' });
-    }
+  return res.status(200).json({
+    institute: 'Instify',
+    logo: '/logo.png',
+    favicon: '/favicon.ico',
+    theme: { color: '#10B981' }
+  });
+}
+
 
     const branding = {
       institute: institute.institute_title,
