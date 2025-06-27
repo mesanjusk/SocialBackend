@@ -4,8 +4,6 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const bodyParser = require('body-parser');
-const otpRoutes = require('./routers/otpRoutes');
 
 dotenv.config();
 
@@ -14,7 +12,6 @@ app.use(cors());
 app.use(express.json());
 app.use(helmet());
 app.use(morgan('dev'));
-app.use(bodyParser.json());
 
 // ✅ MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
@@ -26,23 +23,20 @@ mongoose.connect(process.env.MONGO_URI, {
   console.error('❌ MongoDB connection error:', err.message);
 });
 
-// ✅ Root path check (subdomain-aware message)
+// ✅ Subdomain-aware root route
 app.get('/', (req, res) => {
   const host = req.headers.host || '';
   const baseDomains = ['onrender.com', 'render.com'];
-
   const isSubdomain = baseDomains.some(base =>
     host.endsWith(base) && host.split('.').length > base.split('.').length + 1
   );
-
-  if (isSubdomain) {
-    res.send('🌐 Subdomain detected. Use frontend interface.');
-  } else {
-    res.send('✅ API is running...');
-  }
+  res.send(isSubdomain
+    ? '🌐 Subdomain detected. Use frontend interface.'
+    : '✅ API is running...');
 });
 
-app.use('/api', otpRoutes);
+// ✅ Routes
+app.use('/api', require('./routers/otpRoutes'));
 app.use('/api/institute', require('./routers/instituteRoutes'));
 app.use('/api/auth', require('./routers/authRoutes'));
 app.use('/api/enquiry', require('./routers/enquiryRoutes'));
@@ -53,17 +47,21 @@ app.use('/api/org-categories', require('./routers/orgCategoryRoutes'));
 app.use('/api/education', require('./routers/educationRoutes'));
 app.use('/api/exams', require('./routers/examRoutes'));
 app.use('/api/paymentmode', require('./routers/paymentModeRoutes'));
-
-// ✅ Upload route
 app.use('/api/upload', require('./uploadRoute'));
 app.use('/api/branding', require('./routers/brandingRoutes'));
 
-// 404 fallback
+// ✅ 404 fallback
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// Start server
+// ✅ Optional global error handler
+app.use((err, req, res, next) => {
+  console.error('🔥 Error:', err.stack);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+// ✅ Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
