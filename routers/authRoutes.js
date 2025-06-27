@@ -1,6 +1,5 @@
 const express = require('express');
 const { v4: uuid } = require('uuid');
-// Use correct case-sensitive path for the User model
 const User = require('../models/User');
 const Institute = require('../models/institute');
 
@@ -12,10 +11,10 @@ function generateOTP() {
 }
 
 //
-// ✅ PUBLIC ROUTES (no middleware)
+// ✅ PUBLIC ROUTES
 //
 
-// Admin login by center code
+// ✅ Admin login by center code
 router.post('/institute/login', async (req, res) => {
   try {
     const { center_code, password } = req.body;
@@ -23,40 +22,12 @@ router.post('/institute/login', async (req, res) => {
     const user = await User.findOne({
       login_username: center_code,
       login_password: password
-    }).populate('instituteId');
-
-    if (!user) return res.status(401).json({ message: 'invalid' });
-
-    user.last_login_at = new Date();
-    await user.save();
-
-    res.status(200).json({
-      message: 'success',
-      user_id: user._id,
-      user_name: user.name,
-      user_role: user.role,
-      institute_id: user.instituteId._id,
-      institute_name: user.instituteId.name,
-      center_code: user.login_username,
-      theme_color: user.theme?.primaryColor || '#10B981'
     });
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ message: 'server_error' });
-  }
-});
-
-// General user login
-router.post('/user/login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    const user = await User.findOne({
-      login_username: username,
-      login_password: password
-    }).populate('institute_uuid');
 
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+
+    const institute = await Institute.findOne({ institute_uuid: user.institute_uuid });
+    if (!institute) return res.status(404).json({ message: 'Institute not found' });
 
     user.last_login_at = new Date();
     await user.save();
@@ -67,9 +38,45 @@ router.post('/user/login', async (req, res) => {
       user_name: user.name,
       user_role: user.role,
       login_username: user.login_username,
-      institute_id: user.institute_uuid._id,
-      institute_name: user.institute_uuid.name,
-      theme_color: user.theme?.primaryColor || '#10B981',
+      institute_id: institute._id,
+      institute_uuid: institute.institute_uuid,
+      institute_name: institute.institute_title,
+      theme_color: institute.theme?.color || '#10B981'
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ message: 'server_error' });
+  }
+});
+
+// ✅ General user login
+router.post('/user/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    const user = await User.findOne({
+      login_username: username,
+      login_password: password
+    });
+
+    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+
+    const institute = await Institute.findOne({ institute_uuid: user.institute_uuid });
+    if (!institute) return res.status(404).json({ message: 'Institute not found' });
+
+    user.last_login_at = new Date();
+    await user.save();
+
+    res.status(200).json({
+      message: 'success',
+      user_id: user._id,
+      user_name: user.name,
+      user_role: user.role,
+      login_username: user.login_username,
+      institute_id: institute._id,
+      institute_uuid: institute.institute_uuid,
+      institute_name: institute.institute_title,
+      theme_color: institute.theme?.color || '#10B981',
       last_password_change: user.last_password_change || null
     });
   } catch (err) {
@@ -78,6 +85,7 @@ router.post('/user/login', async (req, res) => {
   }
 });
 
+// ✅ Forgot password
 router.post('/institute/forgot-password', async (req, res) => {
   try {
     const { center_code, mobile } = req.body;
@@ -102,7 +110,7 @@ router.post('/institute/forgot-password', async (req, res) => {
     res.status(200).json({
       message: 'verified',
       user_id: user._id,
-      otp 
+      otp
     });
   } catch (err) {
     console.error('Forgot password error:', err);
@@ -110,7 +118,7 @@ router.post('/institute/forgot-password', async (req, res) => {
   }
 });
 
-// Reset password
+// ✅ Reset password
 router.post('/institute/reset-password/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -133,13 +141,12 @@ router.post('/institute/reset-password/:id', async (req, res) => {
   }
 });
 
-
-// Register new user under institute
+// ✅ Register new user under institute
 router.post('/register', async (req, res) => {
   const { name, password, mobile, role, institute_uuid } = req.body;
 
   if (!institute_uuid) {
-    return res.status(400).json({ success: false, message: 'institute_id is required' });
+    return res.status(400).json({ success: false, message: 'institute_uuid is required' });
   }
 
   try {
@@ -153,7 +160,7 @@ router.post('/register', async (req, res) => {
       login_username: mobile,
       login_password: password,
       user_uuid: uuid(),
-      institute_uuid: institute_uuid
+      institute_uuid
     });
 
     await newUser.save();
@@ -164,7 +171,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Get users by instituteId
+// ✅ Get users by institute_uuid
 router.get('/GetUserList/:institute_id', async (req, res) => {
   const { institute_id } = req.params;
   try {
@@ -176,7 +183,7 @@ router.get('/GetUserList/:institute_id', async (req, res) => {
   }
 });
 
-// Get user by ID
+// ✅ Get user by ID
 router.get('/:id', async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -187,7 +194,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Delete user
+// ✅ Delete user
 router.delete('/:id', async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -201,7 +208,7 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Update user
+// ✅ Update user
 router.put('/:id', async (req, res) => {
   const { name, mobile, role, password } = req.body;
 

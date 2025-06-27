@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const userSchema = new mongoose.Schema({
   user_uuid: {
     type: String,
-    default: () => uuidv4(),
+    default: uuidv4,
     unique: true
   },
 
@@ -42,10 +42,15 @@ const userSchema = new mongoose.Schema({
     default: 'admin'
   },
 
-  // ✅ Store UUID of the institute (not ObjectId)
+  /**
+   * ✅ Correct: Store the Institute's UUID as a string for faster matching.
+   * This is not an ObjectId reference, so `.populate()` should never be used.
+   * All joins with the Institute collection should be done using `findOne({ institute_uuid })`.
+   */
   institute_uuid: {
     type: String,
-    required: true
+    required: true,
+    index: true // ✅ Add index for faster join queries
   },
 
   last_login_at: {
@@ -64,5 +69,10 @@ const userSchema = new mongoose.Schema({
   }
 
 }, { timestamps: true });
+
+// ✅ Additional helpful indexes
+userSchema.index({ login_username: 1 });
+userSchema.index({ mobile: 1 });
+userSchema.index({ email: 1 });
 
 module.exports = mongoose.model('User', userSchema);
