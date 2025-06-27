@@ -157,7 +157,12 @@ router.put('/update/:id', async (req, res) => {
       },
     };
 
-    const updated = await Institute.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    const updated = await Institute.findOneAndUpdate(
+  { institute_uuid: req.params.id },
+  updateData,
+  { new: true }
+);
+
     res.json({ message: 'Updated successfully', updated });
   } catch (err) {
     console.error('Update error:', err);

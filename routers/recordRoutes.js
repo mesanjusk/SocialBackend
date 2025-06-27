@@ -19,6 +19,40 @@ router.get('/org/:institute_id', async (req, res) => {
   }
 });
 
+/// Get records follow-up for today in IST
+router.get('/:institute_id', async (req, res) => {
+  try {
+    const { institute_id } = req.params;
+    const { type } = req.query;
+
+    const filter = {
+      institute_uuid: institute_id
+    };
+    if (type) filter.type = type;
+
+    const now = new Date();
+
+    const todayIST = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+    const yyyy = todayIST.getFullYear();
+    const mm = String(todayIST.getMonth() + 1).padStart(2, '0');
+    const dd = String(todayIST.getDate()).padStart(2, '0');
+
+    const startIST = new Date(`${yyyy}-${mm}-${dd}T00:00:00+05:30`);
+    const endIST = new Date(`${yyyy}-${mm}-${dd}T23:59:59+05:30`);
+
+    const startUTC = new Date(startIST.toISOString());
+    const endUTC = new Date(endIST.toISOString());
+
+    filter.followUpDate = { $gte: startUTC, $lte: endUTC };
+
+    const data = await Record.find(filter).sort({ createdAt: -1 });
+    res.json(data);
+  } catch (err) {
+    console.error('Fetch records failed:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
 // Create new record
 router.post('/', async (req, res) => {
