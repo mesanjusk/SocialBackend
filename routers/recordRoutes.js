@@ -2,37 +2,40 @@ const express = require('express');
 const router = express.Router();
 const Record = require('../models/Record');
 
-// Get records (enquiry/admission) for a specific institute
+// ✅ GET records (enquiry/admission/followup) for a specific institute with pagination
 router.get('/org/:institute_id', async (req, res) => {
   try {
     const { institute_id } = req.params;
-    const { type } = req.query;
+    const { type, page = 0, limit = 20 } = req.query;
 
-    const filter = { institute_uuid: institute_id }; 
+    const filter = { institute_uuid: institute_id };
     if (type) filter.type = type;
 
-    const data = await Record.find(filter).sort({ createdAt: -1 });
-    res.json(data);
+    const safeLimit = Math.min(parseInt(limit), 100); // cap max limit to 100
+
+    const data = await Record.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(parseInt(page) * safeLimit)
+      .limit(safeLimit)
+      .lean(); // optimize memory
+
+    const total = await Record.countDocuments(filter);
+
+    res.json({ data, total, page: parseInt(page), limit: safeLimit });
   } catch (err) {
     console.error('Fetch records failed:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-/// Get records follow-up for today in IST
-router.get('/:institute_id', async (req, res) => {
+// ✅ GET follow-ups for today in IST timezone
+router.get('/followup/:institute_id', async (req, res) => {
   try {
     const { institute_id } = req.params;
-    const { type } = req.query;
-
-    const filter = {
-      institute_uuid: institute_id
-    };
-    if (type) filter.type = type;
+    const { page = 0, limit = 20 } = req.query;
 
     const now = new Date();
-
-    const todayIST = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+    const todayIST = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
     const yyyy = todayIST.getFullYear();
     const mm = String(todayIST.getMonth() + 1).padStart(2, '0');
     const dd = String(todayIST.getDate()).padStart(2, '0');
@@ -43,22 +46,34 @@ router.get('/:institute_id', async (req, res) => {
     const startUTC = new Date(startIST.toISOString());
     const endUTC = new Date(endIST.toISOString());
 
-    filter.followUpDate = { $gte: startUTC, $lte: endUTC };
+    const filter = {
+      institute_uuid: institute_id,
+      type: 'followup',
+      followUpDate: { $gte: startUTC, $lte: endUTC }
+    };
 
-    const data = await Record.find(filter).sort({ createdAt: -1 });
-    res.json(data);
+    const safeLimit = Math.min(parseInt(limit), 100);
+
+    const data = await Record.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(parseInt(page) * safeLimit)
+      .limit(safeLimit)
+      .lean();
+
+    const total = await Record.countDocuments(filter);
+
+    res.json({ data, total, page: parseInt(page), limit: safeLimit });
   } catch (err) {
-    console.error('Fetch records failed:', err);
+    console.error('Fetch follow-ups failed:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-
-// Create new record
+// ✅ Create a new record
 router.post('/', async (req, res) => {
   try {
     const { institute_uuid, type } = req.body;
-    if (!institute_uuid || !['enquiry', 'admission'].includes(type)) {
+    if (!institute_uuid || !['enquiry', 'admission', 'followup'].includes(type)) {
       return res.status(400).json({ error: 'Invalid or missing type' });
     }
 
@@ -71,7 +86,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-
+// ✅ Convert enquiry to admission
 router.post('/convert/:uuid', async (req, res) => {
   try {
     const { uuid } = req.params;
@@ -98,6 +113,7 @@ router.post('/convert/:uuid', async (req, res) => {
     // Perform conversion
     record.type = 'admission';
     record.convertedToAdmission = true;
+    record.admissionDetails = record.admissionDetails || [];
     record.admissionDetails.push(admissionData);
 
     await record.save();
@@ -109,9 +125,7 @@ router.post('/convert/:uuid', async (req, res) => {
   }
 });
 
-
-
-// Update record
+// ✅ Update record
 router.put('/:id', async (req, res) => {
   try {
     const updated = await Record.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -122,7 +136,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete record
+// ✅ Delete record
 router.delete('/:id', async (req, res) => {
   try {
     await Record.findByIdAndDelete(req.params.id);

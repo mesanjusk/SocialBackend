@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const metadataRoute = require('./routes/metadataRoute');
 
 dotenv.config();
 
@@ -50,6 +51,8 @@ app.use('/api/exams', require('./routers/examRoutes'));
 app.use('/api/paymentmode', require('./routers/paymentModeRoutes'));
 app.use('/api/upload', require('./uploadRoute'));
 app.use('/api/branding', require('./routers/brandingRoutes'));
+app.use('/api/metadata', metadataRoute);
+
 
 // ✅ 404 fallback
 app.use((req, res) => {
