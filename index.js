@@ -4,7 +4,6 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const metadataRoute = require('./routes/metadataRoute');
 
 dotenv.config();
 
@@ -36,23 +35,29 @@ app.get('/', (req, res) => {
     : '✅ API is running...');
 });
 
-// ✅ Routes
+// ✅ Core routes
 app.use('/api', require('./routers/otpRoutes'));
-app.use('/api/institute', require('./routers/instituteRoutes'));
 app.use('/api/auth', require('./routers/authRoutes'));
-app.use('/api/enquiry', require('./routers/enquiryRoutes'));
+app.use('/api/institute', require('./routers/instituteRoutes'));
+app.use('/api/branding', require('./routers/brandingRoutes'));
+app.use('/api/metadata', require('./routers/metadataRoute'));
+app.use('/api/upload', require('./uploadRoute'));
+
+// ✅ Domain routes
 app.use('/api/courses', require('./routers/courseRoutes'));
 app.use('/api/courseCategory', require('./routers/courseCategoryRoutes'));
-app.use('/api/record', require('./routers/recordRoutes'));
 app.use('/api/batches', require('./routers/batchRoutes'));
 app.use('/api/org-categories', require('./routers/orgCategoryRoutes'));
 app.use('/api/education', require('./routers/educationRoutes'));
 app.use('/api/exams', require('./routers/examRoutes'));
 app.use('/api/paymentmode', require('./routers/paymentModeRoutes'));
-app.use('/api/upload', require('./uploadRoute'));
-app.use('/api/branding', require('./routers/brandingRoutes'));
-app.use('/api/metadata', metadataRoute);
 
+// ✅ New modular structure for leads, students, admissions
+app.use('/api/students', require('./routers/studentRoutes'));
+app.use('/api/leads', require('./routers/leadRoutes'));
+
+
+app.use('/api/admissions', require('./routers/admissionRoutes'));
 
 // ✅ 404 fallback
 app.use((req, res) => {

@@ -1,0 +1,49 @@
+const Student = require('../models/Student');
+const { v4: uuidv4 } = require('uuid');
+
+// Create Student
+exports.createStudent = async (req, res) => {
+  try {
+    const { institute_uuid, firstName, middleName, lastName, ...rest } = req.body;
+
+    const student = new Student({
+      uuid: uuidv4(),
+      institute_uuid,
+      firstName,
+      middleName,
+      lastName,
+      ...rest,
+      createdBy: req.user ? req.user.name : 'System'
+    });
+
+    await student.save();
+    res.status(201).json({ success: true, data: student });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+// Get All Students
+exports.getStudents = async (req, res) => {
+  try {
+    const { institute_uuid } = req.query;
+    const students = await Student.find(institute_uuid ? { institute_uuid } : {});
+    res.json({ success: true, data: students });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+// Get Single Student
+exports.getStudent = async (req, res) => {
+  try {
+    const student = await Student.findOne({ uuid: req.params.uuid });
+    if (!student) return res.status(404).json({ success: false, message: 'Student not found' });
+    res.json({ success: true, data: student });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
