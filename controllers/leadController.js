@@ -76,15 +76,38 @@ exports.getLead = async (req, res) => {
   }
 };
 
-// Update Lead Status
+// Update Lead Status and add followup entry
 exports.updateLeadStatus = async (req, res) => {
   try {
     const { uuid } = req.params;
-    const { leadStatus } = req.body;
-    await Lead.findOneAndUpdate({ uuid }, { leadStatus });
-    res.json({ success: true, message: 'Lead status updated' });
+    const { leadStatus, remark, createdBy = 'System' } = req.body;
+
+    const validStatuses = ['open', 'follow-up', 'converted', 'lost'];
+    if (!validStatuses.includes(leadStatus)) {
+      return res.status(400).json({ success: false, message: 'Invalid lead status' });
+    }
+
+    const lead = await Lead.findOne({ uuid });
+    if (!lead) {
+      return res.status(404).json({ success: false, message: 'Lead not found' });
+    }
+
+    lead.leadStatus = leadStatus;
+
+    lead.followups.push({
+      date: new Date(),
+      status: leadStatus,
+      remark: remark || '',
+      createdBy,
+      createdAt: new Date()
+    });
+
+    await lead.save();
+
+    res.json({ success: true, message: 'Lead status and followup updated' });
   } catch (error) {
-    console.error(error);
+    console.error('Error updating lead status:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+ś
