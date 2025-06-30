@@ -38,11 +38,23 @@ exports.createLead = async (req, res) => {
   }
 };
 
-// Get All Leads
+// Get All Leads with joined student data
 exports.getLeads = async (req, res) => {
   try {
     const { institute_uuid } = req.query;
-    const leads = await Lead.find(institute_uuid ? { institute_uuid } : {});
+    const leads = await Lead.aggregate([
+      { $match: institute_uuid ? { institute_uuid } : {} },
+      {
+        $lookup: {
+          from: 'students',
+          localField: 'student_uuid',
+          foreignField: 'uuid',
+          as: 'studentData'
+        }
+      },
+      { $unwind: "$studentData" },
+      { $sort: { createdAt: -1 } }
+    ]);
     res.json({ success: true, data: leads });
   } catch (error) {
     console.error(error);
@@ -54,8 +66,23 @@ exports.getLeads = async (req, res) => {
 exports.getLead = async (req, res) => {
   try {
     const lead = await Lead.findOne({ uuid: req.params.uuid });
-    if (!lead) return res.status(404).json({ success: false, message: 'Lead not found' });
+    if (!lead) {
+      return res.status(404).json({ success: false, message: 'Lead not found' });
+    }
     res.json({ success: true, data: lead });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+// Update Lead Status
+exports.updateLeadStatus = async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const { leadStatus } = req.body;
+    await Lead.findOneAndUpdate({ uuid }, { leadStatus });
+    res.json({ success: true, message: 'Lead status updated' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Server Error' });

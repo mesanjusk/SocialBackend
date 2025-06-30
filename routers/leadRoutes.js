@@ -7,5 +7,6 @@ router.post('/', leadController.createLead);
 
 router.get('/', leadController.getLeads);
 router.get('/:uuid', leadController.getLead);
+router.put('/:uuid', leadController.updateLeadStatus);
 
 module.exports = router;
