@@ -3,6 +3,7 @@ const Student = require('../models/Student');
 const { v4: uuidv4 } = require('uuid');
 
 // Create Lead with Auto Student Linking
+// Create Lead with Auto Student Linking
 exports.createLead = async (req, res) => {
   try {
     const { institute_uuid, studentData, leadData } = req.body;
@@ -26,6 +27,7 @@ exports.createLead = async (req, res) => {
       uuid: uuidv4(),
       institute_uuid,
       student_uuid: student.uuid,
+      course: studentData.course, // ✅ Added line
       ...leadData,
       createdBy: req.user ? req.user.name : 'System'
     });
@@ -37,6 +39,7 @@ exports.createLead = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
 
 // Get All Leads with joined student data
 exports.getLeads = async (req, res) => {
