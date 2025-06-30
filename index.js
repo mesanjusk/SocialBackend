@@ -58,6 +58,8 @@ app.use('/api/leads', require('./routers/leadRoutes'));
 
 
 app.use('/api/admissions', require('./routers/admissionRoutes'));
+app.use('/api/fees', require('./routers/feesRoutes'));
+
 
 // ✅ 404 fallback
 app.use((req, res) => {

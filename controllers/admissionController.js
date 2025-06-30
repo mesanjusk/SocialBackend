@@ -1,15 +1,22 @@
+// ========== controllers/admissionController.js ==========
+
 const Admission = require('../models/Admission');
 const { v4: uuidv4 } = require('uuid');
 
 // Create Admission
 exports.createAdmission = async (req, res) => {
   try {
+    const { student_uuid, institute_uuid, course, fees, total, balance } = req.body;
+
+    if (!student_uuid || !institute_uuid || !course || fees == null || total == null || balance == null) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
     const admission = new Admission({
       uuid: uuidv4(),
       ...req.body,
       createdBy: req.user ? req.user.name : 'System'
     });
-
     await admission.save();
     res.status(201).json({ success: true, data: admission });
   } catch (error) {
@@ -17,6 +24,7 @@ exports.createAdmission = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
 
 // Get All Admissions
 exports.getAdmissions = async (req, res) => {
@@ -35,6 +43,28 @@ exports.getAdmission = async (req, res) => {
   try {
     const admission = await Admission.findOne({ uuid: req.params.uuid });
     if (!admission) return res.status(404).json({ success: false, message: 'Admission not found' });
+    res.json({ success: true, data: admission });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+// Update Admission
+exports.updateAdmission = async (req, res) => {
+  try {
+    const admission = await Admission.findOneAndUpdate(
+      { uuid: req.params.uuid },
+      {
+        ...req.body,
+        updatedAt: new Date(),
+        updatedBy: req.user ? req.user.name : 'System'
+      },
+      { new: true }
+    );
+
+    if (!admission) return res.status(404).json({ success: false, message: 'Admission not found' });
+
     res.json({ success: true, data: admission });
   } catch (error) {
     console.error(error);

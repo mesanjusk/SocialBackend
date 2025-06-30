@@ -47,3 +47,27 @@ exports.getStudent = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
+// Update Student
+exports.updateStudent = async (req, res) => {
+  try {
+    const student = await Student.findOneAndUpdate(
+      { uuid: req.params.uuid },
+      {
+        ...req.body,
+        updatedAt: new Date(),
+        updatedBy: req.user ? req.user.name : 'System'
+      },
+      { new: true }
+    );
+
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
+
+    res.json({ success: true, data: student });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
