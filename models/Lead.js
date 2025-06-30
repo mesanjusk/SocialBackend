@@ -13,7 +13,7 @@ const leadSchema = new mongoose.Schema({
   uuid: { type: String, default: uuidv4, unique: true },
   institute_uuid: { type: String, required: true },
   student_uuid: { type: String, required: true },
-
+  course: { type: String },
   branchCode: String,
   enquiryDate: { type: Date, default: Date.now },
   referredBy: String,
