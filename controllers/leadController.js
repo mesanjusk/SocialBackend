@@ -27,7 +27,6 @@ exports.createLead = async (req, res) => {
       uuid: uuidv4(),
       institute_uuid,
       student_uuid: student.uuid,
-      course: studentData.course, // ✅ Added line
       ...leadData,
       createdBy: req.user ? req.user.name : 'System'
     });

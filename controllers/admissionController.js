@@ -30,13 +30,38 @@ exports.createAdmission = async (req, res) => {
 exports.getAdmissions = async (req, res) => {
   try {
     const { institute_uuid } = req.query;
-    const admissions = await Admission.find(institute_uuid ? { institute_uuid } : {});
+
+    const pipeline = [
+      { $match: institute_uuid ? { institute_uuid } : {} },
+      {
+        $lookup: {
+          from: "students",
+          localField: "student_uuid",
+          foreignField: "uuid",
+          as: "student"
+        }
+      },
+      {
+        $lookup: {
+          from: "fees",
+          localField: "uuid", // admission_uuid
+          foreignField: "admission_uuid",
+          as: "fees"
+        }
+      },
+      { $unwind: "$student" },
+      { $unwind: "$fees" }
+    ];
+
+    const admissions = await Admission.aggregate(pipeline);
+
     res.json({ success: true, data: admissions });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
 
 // Get Single Admission
 exports.getAdmission = async (req, res) => {

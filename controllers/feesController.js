@@ -57,6 +57,33 @@ exports.getFee = async (req, res) => {
   }
 };
 
+// Get Due-Date Wise Receivables
+exports.getFeesReceivablesByDueDate = async (req, res) => {
+  try {
+    const { institute_uuid } = req.query;
+    if (!institute_uuid) {
+      return res.status(400).json({ success: false, message: 'institute_uuid is required' });
+    }
+
+    const feesRecords = await Fees.find({ institute_uuid })
+      .sort({ dueDate: 1 });
+
+    const formatted = feesRecords.map(fee => ({
+      student_uuid: fee.student_uuid,
+      dueDate: fee.dueDate,
+      total: fee.total,
+      feesPaid: fee.fees,
+      balance: fee.total - fee.fees
+    }));
+
+    res.json({ success: true, data: formatted });
+  } catch (error) {
+    console.error('❌ getFeesReceivablesByDueDate error:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+
 // Update Fees Record
 exports.updateFees = async (req, res) => {
   try {
