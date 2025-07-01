@@ -16,7 +16,7 @@ const leadSchema = new mongoose.Schema({
   branchCode: String,
   enquiryDate: { type: Date, default: Date.now },
   referredBy: String,
-  leadStatus: { type: String, enum: ['open', 'follow-up', 'converted', 'lost'], default: 'open' },
+  admission_uuid: { type: String },
   followups: [followUpSchema],
   createdBy: String,
 }, { timestamps: true });

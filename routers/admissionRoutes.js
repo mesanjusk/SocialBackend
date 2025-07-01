@@ -4,6 +4,8 @@ const admissionController = require('../controllers/admissionController');
 
 router.post('/', admissionController.createAdmission);
 router.get('/', admissionController.getAdmissions);
+router.get('/by-student/:student_uuid', admissionController.getAdmissionByStudentUUID);
 router.get('/:uuid', admissionController.getAdmission);
+
 
 module.exports = router;

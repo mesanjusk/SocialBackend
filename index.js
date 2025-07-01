@@ -55,8 +55,9 @@ app.use('/api/paymentmode', require('./routers/paymentModeRoutes'));
 // ✅ New modular structure for leads, students, admissions
 app.use('/api/students', require('./routers/studentRoutes'));
 app.use('/api/leads', require('./routers/leadRoutes'));
-
-
+app.use('/api/transaction', require('./routers/transactionRoutes'));
+app.use('/api/account', require('./routers/accountRoutes'));
+app.use('/api/accountgroup', require('./routers/accountgroupRoutes'));
 app.use('/api/admissions', require('./routers/admissionRoutes'));
 app.use('/api/fees', require('./routers/feesRoutes'));
 

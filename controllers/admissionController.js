@@ -6,9 +6,9 @@ const { v4: uuidv4 } = require('uuid');
 // Create Admission
 exports.createAdmission = async (req, res) => {
   try {
-    const { student_uuid, institute_uuid, course, fees, total, balance } = req.body;
+    const { student_uuid, institute_uuid, course } = req.body;
 
-    if (!student_uuid || !institute_uuid || !course || fees == null || total == null || balance == null) {
+    if (!student_uuid || !institute_uuid || !course) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
@@ -25,6 +25,20 @@ exports.createAdmission = async (req, res) => {
   }
 };
 
+// Get Admission by student_uuid
+exports.getAdmissionByStudentUUID = async (req, res) => {
+  try {
+    const admission = await Admission.findOne({ student_uuid: req.params.student_uuid });
+    if (!admission) {
+      return res.status(404).json({ success: false, message: 'Admission not found' });
+    }
+
+    res.json({ success: true, admission });
+  } catch (error) {
+    console.error("Error fetching admission:", error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
 
 // Get All Admissions
 exports.getAdmissions = async (req, res) => {

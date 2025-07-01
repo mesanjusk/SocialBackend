@@ -10,14 +10,6 @@ const admissionSchema = new mongoose.Schema({
   course: { type: String, required: true },
   batchTime: String,
   examEvent: String,
-  installment: String,
-
-  fees: { type: Number, required: true },
-  discount: { type: Number, default: 0 },
-  total: { type: Number, required: true },
-  feePaid: { type: Number, default: 0 },
-  paidBy: String,
-  balance: { type: Number, required: true },
 
   createdBy: String,
 }, { timestamps: true });

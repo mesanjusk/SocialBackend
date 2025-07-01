@@ -2,43 +2,76 @@ const Lead = require('../models/Lead');
 const Student = require('../models/Student');
 const { v4: uuidv4 } = require('uuid');
 
-// Create Lead with Auto Student Linking
-// Create Lead with Auto Student Linking
 exports.createLead = async (req, res) => {
   try {
-    const { institute_uuid, studentData, leadData } = req.body;
-
-    let student = await Student.findOne({
+    console.log('📦 Incoming payload:', req.body);
+    const {
       institute_uuid,
-      mobileSelf: studentData.mobileSelf
-    });
+      student_uuid,
+      studentData,
+      admission_uuid,
+      enquiryDate,
+      course,
+      referredBy,
+      createdBy,
+      followups
+    } = req.body;
 
-    if (!student) {
-      student = new Student({
-        uuid: uuidv4(),
+    let student;
+
+    if (student_uuid) {
+      student = await Student.findOne({ uuid: student_uuid, institute_uuid });
+      if (!student) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid student_uuid or not found',
+        });
+      }
+    } else {
+      if (!institute_uuid || !studentData || !studentData.mobileSelf) {
+        return res.status(400).json({
+          success: false,
+          message: 'Missing required data: institute_uuid or mobileSelf',
+        });
+      }
+
+      student = await Student.findOne({
         institute_uuid,
-        ...studentData,
-        createdBy: req.user ? req.user.name : 'System'
+        mobileSelf: studentData.mobileSelf,
       });
-      await student.save();
+
+      if (!student) {
+        student = new Student({
+          uuid: uuidv4(),
+          institute_uuid,
+          ...studentData,
+          course: studentData.course,
+          createdBy: req.user ? req.user.name : 'System',
+        });
+        await student.save();
+      }
     }
 
     const lead = new Lead({
       uuid: uuidv4(),
       institute_uuid,
       student_uuid: student.uuid,
-      ...leadData,
-      createdBy: req.user ? req.user.name : 'System'
+      course: course || studentData?.course || student?.course,
+      admission_uuid: admission_uuid || null,
+      enquiryDate: enquiryDate || new Date(),
+      referredBy: referredBy || '',
+      followups: Array.isArray(followups) ? followups : [],
+      createdBy: createdBy || (req.user ? req.user.name : 'System'),
     });
 
     await lead.save();
     res.status(201).json({ success: true, data: { lead, student } });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
-
 
 // Get All Leads with joined student data
 exports.getLeads = async (req, res) => {
