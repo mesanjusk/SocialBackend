@@ -8,7 +8,7 @@ router.post("/addTransaction", async (req, res) => {
     const {
       Description,
       Transaction_date,
-      Admission_uuid,
+      institute_uuid,
       Total_Debit,
       Total_Credit,
       Payment_mode,
@@ -48,7 +48,7 @@ router.post("/addTransaction", async (req, res) => {
     const newTransaction = new Transaction({
       Transaction_uuid: uuid(),
       Transaction_id: newTransactionNumber,
-      Admission_uuid,
+      institute_uuid,
       Transaction_date,
       Total_Debit,
       Total_Credit,

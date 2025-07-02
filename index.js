@@ -60,7 +60,7 @@ app.use('/api/account', require('./routers/accountRoutes'));
 app.use('/api/accountgroup', require('./routers/accountgroupRoutes'));
 app.use('/api/admissions', require('./routers/admissionRoutes'));
 app.use('/api/fees', require('./routers/feesRoutes'));
-
+app.use('/api/attendance', require('./routers/attendanceRoutes'));
 
 // ✅ 404 fallback
 app.use((req, res) => {
