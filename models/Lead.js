@@ -5,7 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const followUpSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
   note: String,
-  status: { type: String, enum: ['open', 'follow-up', 'converted', 'lost'] },
+  status: { type: String, enum: ['follow-up', 'converted', 'lost'] },
 }, { _id: false });
 
 const leadSchema = new mongoose.Schema({
