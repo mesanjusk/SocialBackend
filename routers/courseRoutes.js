@@ -1,16 +1,15 @@
 const express = require('express');
 const Course = require('../models/Course');
 const router = express.Router();
+const { v4: uuid } = require("uuid");
 
 // ✅ GET courses (optionally filter by institute_id)
 router.get('/', async (req, res) => {
   try {
-    const { institute_uuid } = req.query;
-    const query = institute_uuid ? { institute_uuid } : {};
-    const courses = await Course.find(query);
-    res.json(courses);
+    const data = await Course.find().lean();
+    res.status(200).json(data);
   } catch (err) {
-    console.error('Failed to fetch courses:', err);
+    console.error('❌ Failed to fetch exams:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -18,19 +17,29 @@ router.get('/', async (req, res) => {
 // ✅ POST new course
 router.post('/', async (req, res) => {
   try {
-    const { name, institute_uuid } = req.body;
-    if (!name || !institute_uuid) {
-      return res.status(400).json({ error: 'name and institute_id are required' });
+    const { name, description, courseFees, examFees, duration } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: 'name is required' });
     }
 
-    const newCourse = new Course(req.body);
+    const newCourse = new Course({
+      Course_uuid: uuid(),
+      name,
+      description,
+      courseFees,
+      examFees,
+      duration,
+    });
+
     await newCourse.save();
     res.status(201).json(newCourse);
   } catch (err) {
-    console.error('Failed to create course:', err);
+    console.error('❌ Failed to create course:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 // ✅ PUT update course
 router.put('/:id', async (req, res) => {

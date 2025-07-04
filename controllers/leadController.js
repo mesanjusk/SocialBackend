@@ -54,7 +54,7 @@ exports.createLead = async (req, res) => {
     }
 
     const lead = new Lead({
-      uuid: uuidv4(),
+      Lead_uuid: uuidv4(),
       institute_uuid,
       student_uuid: student.uuid,
       course: course || studentData?.course || student?.course,

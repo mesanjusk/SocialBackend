@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
 
 const courseSchema = new mongoose.Schema({
-  uuid: {
+  Course_uuid: {
     type: String,
     default: uuidv4,
     unique: true
@@ -15,10 +15,6 @@ const courseSchema = new mongoose.Schema({
   courseFees: String,
   examFees: String,
   duration: String,
-  institute_uuid: {
-    type: String,
-    required: true
-  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Course', courseSchema);
