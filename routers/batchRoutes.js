@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const Batch = require('../models/Batch');
+const { v4: uuid } = require("uuid");
 
 // 📥 GET all batches (optionally filtered by institute_id)
 router.get('/', async (req, res) => {
   try {
     const { institute_uuid } = req.query;
     const query = institute_uuid ? { institute_uuid } : {};
+
     const batches = await Batch.find(query).lean();
     res.status(200).json(batches);
   } catch (err) {
@@ -23,7 +25,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'institute_id and name are required' });
     }
 
-    const newBatch = new Batch({ institute_uuid, name, timing });
+    const newBatch = new Batch({ institute_uuid, name, timing, Batch_uuid: uuid() });
     await newBatch.save();
     res.status(201).json(newBatch);
   } catch (err) {

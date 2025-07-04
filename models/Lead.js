@@ -15,6 +15,7 @@ const leadSchema = new mongoose.Schema({
   course: { type: String },
   branchCode: String,
   enquiryDate: { type: Date, default: Date.now },
+  followupDate: { type: Date},
   referredBy: String,
   admission_uuid: { type: String },
   followups: [followUpSchema],

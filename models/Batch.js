@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const batchSchema = new mongoose.Schema({
+  Batch_uuid: { type: String },
   name: {
     type: String,
     required: true,
