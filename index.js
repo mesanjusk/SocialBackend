@@ -61,6 +61,8 @@ app.use('/api/accountgroup', require('./routers/accountgroupRoutes'));
 app.use('/api/admissions', require('./routers/admissionRoutes'));
 app.use('/api/fees', require('./routers/feesRoutes'));
 app.use('/api/attendance', require('./routers/attendanceRoutes'));
+app.use('/api/dashboard-stats', require('./routers/dashboardStats'));
+
 
 // ✅ 404 fallback
 app.use((req, res) => {
