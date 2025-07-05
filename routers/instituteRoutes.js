@@ -1,9 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
-
+const jwt = require("jsonwebtoken");
 const Institute = require('../models/institute');
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
+
+require('dotenv').config();
+const JWT_SECRET = process.env.JWT_SECRET;
+
 
 // POST /api/institute/signup
 router.post('/signup', async (req, res) => {
@@ -72,39 +77,55 @@ router.post('/signup', async (req, res) => {
 
     await newInstitute.save();
 
-    // Step 2: Create Admin User
-    const newUser = new User({
-      user_uuid: uuidv4(),
-      name: center_head_name,
-      email,
-      mobile: String(institute_call_number),
-      login_username: center_code,
-      login_password: center_code,
-      role: 'admin',
-      institute_uuid: instituteUUID,
-      isTrial: true,
-      trialExpiresAt: trialExpiry,
-      theme: {
-        primaryColor: theme_color,
-        logoUrl: ''
-      }
-    });
+    const hashedPassword = await bcrypt.hash(center_code, 10);
 
-    await newUser.save();
+   // Step 2: Create Admin User
+const newUser = new User({
+  user_uuid: uuidv4(),
+  name: center_head_name,
+  email,
+  mobile: String(institute_call_number),
+  login_username: center_code,
+  login_password: hashedPassword,
+  role: 'admin',
+  institute_uuid: instituteUUID,
+  isTrial: true,
+  trialExpiresAt: trialExpiry,
+  theme: {
+    primaryColor: theme_color,
+    logoUrl: ''
+  }
+});
 
-    // Step 3: Link user in Institute
-    newInstitute.users = [newUser._id];
-    newInstitute.createdBy = newUser._id;
-    await newInstitute.save();
+await newUser.save();
 
-    res.json({
-      message: 'success',
-      institute_title: newInstitute.institute_title,
-      institute_uuid: newInstitute.institute_uuid,
-      center_code,
-      theme_color,
-      trialExpiresAt: trialExpiry
-    });
+// 🔐 Create JWT token
+const token = jwt.sign(
+  {
+    user_uuid: newUser.user_uuid,
+    role: newUser.role,
+    institute_uuid: newUser.institute_uuid
+  },
+  JWT_SECRET,
+  { expiresIn: '7d' }
+);
+
+// Step 3: Link user in Institute
+newInstitute.users = [newUser._id];
+newInstitute.createdBy = newUser._id;
+await newInstitute.save();
+
+// ✅ Return response with token
+res.json({
+  message: 'success',
+  institute_title: newInstitute.institute_title,
+  institute_uuid: newInstitute.institute_uuid,
+  center_code,
+  theme_color,
+  trialExpiresAt: trialExpiry,
+  token
+});
+
 
   } catch (err) {
     console.error('Signup Error:', err);
@@ -169,5 +190,30 @@ router.put('/update/:id', async (req, res) => {
     res.status(500).json({ error: 'Update failed' });
   }
 });
+
+router.post('/send-message', async (req, res) => {
+  const { mobile, message, type, userName } = req.body;
+
+  if (!mobile || !message || !type || !userName) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  const apiKey = '9d8db6b2a1584a489e7270a9bbe1b7a0';
+
+  const encodedMobile = encodeURIComponent(mobile);
+  const encodedMsg = encodeURIComponent(message);
+
+  const url = `http://148.251.129.118/wapp/api/send?apikey=${apiKey}&mobile=${encodedMobile}&msg=${encodedMsg}`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.text(); 
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
 
 module.exports = router;

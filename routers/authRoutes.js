@@ -1,7 +1,14 @@
 const express = require('express');
 const { v4: uuid } = require('uuid');
 const User = require('../models/User');
+const jwt = require("jsonwebtoken");
 const Institute = require('../models/institute');
+
+const bcrypt = require('bcryptjs');
+
+require('dotenv').config();
+const JWT_SECRET = process.env.JWT_SECRET;
+
 
 const router = express.Router();
 const otpStore = {};
@@ -149,25 +156,46 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ success: false, message: 'institute_uuid is required' });
   }
 
+  if (!mobile || !password || !name || !role) {
+    return res.status(400).json({ success: false, message: 'All fields are required' });
+  }
+
   try {
     const existingUser = await User.findOne({ mobile });
-    if (existingUser) return res.json('exist');
+
+    if (existingUser) {
+      return res.status(409).json({ success: false, message: 'User already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
       name,
       mobile,
       role,
       login_username: mobile,
-      login_password: password,
+      login_password: hashedPassword,
       user_uuid: uuid(),
       institute_uuid
     });
 
     await newUser.save();
-    res.json('notexist');
+
+    const token = jwt.sign(
+      {
+        user_uuid: newUser.user_uuid,
+        mobile: newUser.mobile,
+        role: newUser.role,
+        institute_uuid: newUser.institute_uuid
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({ success: true, token, user: newUser });
   } catch (err) {
     console.error('Error saving user:', err);
-    res.status(500).json('fail');
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
