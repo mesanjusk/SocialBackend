@@ -7,7 +7,7 @@ const Admission = require('../models/Admission');
 const Course = require('../models/Course');
 const Enquiry = require('../models/Enquiry');
 const Fees = require('../models/Fees'); // or Transaction, as per your structure
-const Followup = require('../models/Followup'); // or Leads, as per your structure
+const Followup = require('../models/Lead'); // or Leads, as per your structure
 const Attendance = require('../models/Attendance'); // optional
 
 // Utility to get today's date in local timezone
