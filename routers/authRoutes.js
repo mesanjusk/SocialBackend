@@ -138,7 +138,9 @@ router.post('/institute/reset-password/:id', async (req, res) => {
       return res.status(401).json({ message: 'Old password is incorrect' });
     }
 
-    user.login_password = new_password;
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+
+    user.login_password = hashedPassword;
     await user.save();
 
     res.status(200).json({ message: 'reset_success' });

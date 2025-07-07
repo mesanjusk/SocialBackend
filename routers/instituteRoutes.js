@@ -199,16 +199,27 @@ router.post('/send-message', async (req, res) => {
   }
 
   const apiKey = '9d8db6b2a1584a489e7270a9bbe1b7a0';
-
   const encodedMobile = encodeURIComponent(mobile);
   const encodedMsg = encodeURIComponent(message);
-
   const url = `http://148.251.129.118/wapp/api/send?apikey=${apiKey}&mobile=${encodedMobile}&msg=${encodedMsg}`;
 
   try {
     const response = await fetch(url);
-    const data = await response.text(); 
-    res.status(200).json({ success: true, data });
+    const data = await response.text();
+
+    let userId = null;
+    if (type === 'forgot') {
+      const user = await User.findOne({
+        mobile: mobile.replace(/^91/, ''),         
+        login_username: userName                    
+      });
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      userId = user._id;
+    }
+
+    res.status(200).json({ success: true, data, userId });
   } catch (error) {
     console.error('API Error:', error);
     res.status(500).json({ error: 'Failed to send message' });
