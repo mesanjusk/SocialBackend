@@ -102,7 +102,7 @@ exports.getLeads = async (req, res) => {
 // Get Single Lead
 exports.getLead = async (req, res) => {
   try {
-    const lead = await Lead.findOne({ uuid: req.params.uuid });
+    const lead = await Lead.findOne({ Lead_uuid: req.params.Lead_uuid });
     if (!lead) {
       return res.status(404).json({ success: false, message: 'Lead not found' });
     }
@@ -116,7 +116,7 @@ exports.getLead = async (req, res) => {
 // Update Lead Status and add followup entry
 exports.updateLeadStatus = async (req, res) => {
   try {
-    const { uuid } = req.params;
+    const { uuid: Lead_uuid } = req.params;
     const { leadStatus, remark, createdBy = 'System' } = req.body;
 
     const validStatuses = ['open', 'follow-up', 'converted', 'lost'];
@@ -124,7 +124,7 @@ exports.updateLeadStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid lead status' });
     }
 
-    const lead = await Lead.findOne({ uuid });
+    const lead = await Lead.findOne({ Lead_uuid });
     if (!lead) {
       return res.status(404).json({ success: false, message: 'Lead not found' });
     }
@@ -147,3 +147,33 @@ exports.updateLeadStatus = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
+exports.editLead = async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const { studentData, course } = req.body;
+
+    const lead = await Lead.findOne({ Lead_uuid: uuid });
+    if (!lead) {
+      return res.status(404).json({ success: false, message: 'Lead not found' });
+    }
+
+    lead.course = course;
+
+    // Also update the student data if needed
+    if (lead.student_uuid && studentData) {
+      await Student.findOneAndUpdate(
+        { uuid: lead.student_uuid },
+        { ...studentData },
+        { new: true }
+      );
+    }
+
+    await lead.save();
+    res.json({ success: true, message: 'Lead updated successfully' });
+  } catch (error) {
+    console.error('Error updating lead:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+

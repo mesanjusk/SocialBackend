@@ -11,6 +11,16 @@ const admissionSchema = new mongoose.Schema({
   batchTime: String,
   examEvent: String,
 
+    confirmationStatus: {
+    type: String,
+    enum: ['Confirmed', 'DropOut', ''], 
+    default: '',
+  },
+  dropoutReason: {
+    type: String,
+    default: '',
+  },
+
   createdBy: String,
 }, { timestamps: true });
 

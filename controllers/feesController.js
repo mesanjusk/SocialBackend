@@ -107,3 +107,22 @@ exports.updateFees = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
+
+// Get Fees Record by Admission UUID
+exports.getFeesByAdmissionUuid = async (req, res) => {
+  try {
+    const { admission_uuid } = req.params;
+
+    const fee = await Fees.findOne({ admission_uuid });
+
+    if (!fee) {
+      return res.status(404).json({ success: false, message: 'Fee record not found for this admission' });
+    }
+
+    res.json({ success: true, data: fee });
+  } catch (error) {
+    console.error('❌ getFeesByAdmissionUuid error:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};

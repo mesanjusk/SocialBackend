@@ -19,4 +19,7 @@ router.get('/:uuid', /* protect, */ feesController.getFee);
 // Update Fees Record by UUID
 router.put('/:uuid', /* protect, */ feesController.updateFees);
 
+// Get Fees by Admission UUID
+router.get('/admission/:admission_uuid', feesController.getFeesByAdmissionUuid);
+
 module.exports = router;
