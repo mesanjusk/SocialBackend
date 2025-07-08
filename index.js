@@ -18,11 +18,13 @@ app.use(morgan('dev'));
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-}).then(() => {
+}).then(async () => {
   console.log('✅ Connected to MongoDB');
-  initWhatsApp(process.env.MONGO_URI).catch(err => {
+  try {
+    await initWhatsApp(mongoose.connection.db);
+  } catch (err) {
     console.error('❌ WhatsApp init error:', err);
-  });
+  }
 }).catch((err) => {
   console.error('❌ MongoDB connection error:', err.message);
 });

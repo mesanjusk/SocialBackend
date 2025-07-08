@@ -1,13 +1,10 @@
 const { default: makeWASocket, DisconnectReason, useMongoDBAuthState } = require('@whiskeysockets/baileys');
-const { MongoClient } = require('mongodb');
 const P = require('pino');
 
 let sock;
 
-async function initWhatsApp(mongoUri) {
-  const client = new MongoClient(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true });
-  await client.connect();
-  const { state, saveCreds } = await useMongoDBAuthState(client.db().collection('wa_auth'));
+async function initWhatsApp(db) {
+  const { state, saveCreds } = await useMongoDBAuthState(db.collection('wa_auth'));
 
   sock = makeWASocket({
     auth: state,
@@ -22,7 +19,7 @@ async function initWhatsApp(mongoUri) {
     if (connection === 'close') {
       const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
       console.log('WhatsApp connection closed:', lastDisconnect?.error);
-      if (shouldReconnect) initWhatsApp(mongoUri);
+      if (shouldReconnect) initWhatsApp(db);
     } else if (connection === 'open') {
       console.log('WhatsApp connection opened');
     }
