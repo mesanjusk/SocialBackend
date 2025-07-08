@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const { initWhatsApp } = require('./whatsapp/baileysClient');
 
 dotenv.config();
 
@@ -19,6 +20,9 @@ mongoose.connect(process.env.MONGO_URI, {
   useUnifiedTopology: true,
 }).then(() => {
   console.log('✅ Connected to MongoDB');
+  initWhatsApp(process.env.MONGO_URI).catch(err => {
+    console.error('❌ WhatsApp init error:', err);
+  });
 }).catch((err) => {
   console.error('❌ MongoDB connection error:', err.message);
 });
@@ -62,6 +66,7 @@ app.use('/api/admissions', require('./routers/admissionRoutes'));
 app.use('/api/fees', require('./routers/feesRoutes'));
 app.use('/api/attendance', require('./routers/attendanceRoutes'));
 app.use('/api/dashboard-stats', require('./routers/dashboardStats'));
+app.use('/api/whatsapp', require('./routers/whatsappRoutes'));
 
 
 // ✅ 404 fallback
