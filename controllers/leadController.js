@@ -4,7 +4,6 @@ const { v4: uuidv4 } = require('uuid');
 
 exports.createLead = async (req, res) => {
   try {
-    console.log('📦 Incoming payload:', req.body);
     const {
       institute_uuid,
       student_uuid,
@@ -18,39 +17,43 @@ exports.createLead = async (req, res) => {
       followups
     } = req.body;
 
-    let student;
+    if (!institute_uuid || !studentData?.mobileSelf) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required data: institute_uuid or mobileSelf',
+      });
+    }
 
-    if (student_uuid) {
-      student = await Student.findOne({ uuid: student_uuid, institute_uuid });
-      if (!student) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid student_uuid or not found',
-        });
-      }
-    } else {
-      if (!institute_uuid || !studentData || !studentData.mobileSelf) {
-        return res.status(400).json({
-          success: false,
-          message: 'Missing required data: institute_uuid or mobileSelf',
-        });
-      }
+    const existingStudent = await Student.findOne({
+      institute_uuid,
+      mobileSelf: studentData.mobileSelf,
+    });
 
-      student = await Student.findOne({
+    if (existingStudent) {
+      const existingLead = await Lead.findOne({
+        student_uuid: existingStudent.uuid,
         institute_uuid,
-        mobileSelf: studentData.mobileSelf,
       });
 
-      if (!student) {
-        student = new Student({
-          uuid: uuidv4(),
-          institute_uuid,
-          ...studentData,
-          course: studentData.course,
-          createdBy: req.user ? req.user.name : 'System',
+      if (existingLead) {
+        return res.status(409).json({
+          success: false,
+          message: 'Lead with this mobile number already exists in this institute.',
         });
-        await student.save();
       }
+    }
+
+    let student = existingStudent;
+
+    if (!student) {
+      student = new Student({
+        uuid: uuidv4(),
+        institute_uuid,
+        ...studentData,
+        course: studentData.course,
+        createdBy: req.user ? req.user.name : 'System',
+      });
+      await student.save();
     }
 
     const lead = new Lead({
@@ -60,13 +63,14 @@ exports.createLead = async (req, res) => {
       course: course || studentData?.course || student?.course,
       admission_uuid: admission_uuid || null,
       enquiryDate: enquiryDate || new Date(),
-      followupDate: followupDate,
+      followupDate,
       referredBy: referredBy || '',
       followups: Array.isArray(followups) ? followups : [],
       createdBy: createdBy || (req.user ? req.user.name : 'System'),
     });
 
     await lead.save();
+
     res.status(201).json({ success: true, data: { lead, student } });
 
   } catch (error) {

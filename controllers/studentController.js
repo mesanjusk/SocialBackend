@@ -71,3 +71,26 @@ exports.updateStudent = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
+// Check if mobile number exists for given institute
+exports.checkMobileNumber = async (req, res) => {
+  try {
+    const { institute_uuid, mobileSelf } = req.query;
+
+    if (!institute_uuid || !mobileSelf) {
+      return res.status(400).json({ success: false, message: 'Missing institute_uuid or mobileSelf' });
+    }
+
+    const student = await Student.findOne({ institute_uuid, mobileSelf });
+
+    if (student) {
+      return res.status(200).json({ exists: true });
+    }
+
+    return res.status(200).json({ exists: false });
+  } catch (error) {
+    console.error('Error in checkMobileNumber:', error);
+    return res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
