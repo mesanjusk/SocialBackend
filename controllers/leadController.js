@@ -102,16 +102,19 @@ exports.getLeads = async (req, res) => {
 // Get Single Lead
 exports.getLead = async (req, res) => {
   try {
-    const lead = await Lead.findOne({ Lead_uuid: req.params.Lead_uuid });
+    const lead = await Lead.findOne({ Lead_uuid: req.params.uuid });
+
     if (!lead) {
       return res.status(404).json({ success: false, message: 'Lead not found' });
     }
+
     res.json({ success: true, data: lead });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
 
 // Update Lead Status and add followup entry
 exports.updateLeadStatus = async (req, res) => {

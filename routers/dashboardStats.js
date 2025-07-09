@@ -20,51 +20,62 @@ function getTodayRange() {
 
 router.get('/', async (req, res) => {
   try {
-    const { start, end } = getTodayRange();
     const { institute_uuid } = req.query;
+    const { start, end } = getTodayRange();
 
     if (!institute_uuid) {
       return res.status(400).json({ error: 'Missing institute_uuid' });
     }
 
+ const feesRecords = await Fees.find({ institute_uuid });
+
+let todayCollection = 0;
+
+const istNow = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+const todayStr = new Date(istNow).toISOString().split('T')[0];
+
+feesRecords.forEach((fee) => {
+  (fee.installmentPlan || []).forEach(plan => {
+    const planDate = new Date(plan.dueDate).toISOString().split('T')[0];
+    if (planDate === todayStr) {
+      todayCollection += Number(plan.amount || 0);
+    }
+  });
+});
+
     const [
       students,
-      admissions,
-      courses,
+      admissionsCount,
       enquiries,
-      feesToday,
-      followupToday,
       attendanceList
     ] = await Promise.all([
-      Student.countDocuments({ institute_uuid }),            
-      Admission.countDocuments({ institute_uuid }),         
-      Course.countDocuments(),            
-      Lead.countDocuments({ institute_uuid }),          
-      Fees.aggregate([
-        { $match: { institute_uuid, date: { $gte: start, $lte: end } } }, 
-        { $group: { _id: null, total: { $sum: "$amount" } } }
-      ]),
-      Followup.countDocuments({ institute_uuid, followupDate: { $gte: start, $lte: end } }),
+      Student.countDocuments({ institute_uuid }),
+      Admission.countDocuments({ institute_uuid }),
+      Lead.countDocuments({ institute_uuid }),
       Attendance.find({ institute_uuid, date: { $gte: start, $lte: end } })
         .select('name status -_id')
         .limit(8)
     ]);
 
+ const followupToday = await Followup.countDocuments({
+  institute_uuid,
+  followupDate: { $gte: start, $lte: end }
+});
+
     res.json({
       students,
-      admissions,
-      courses,
+      admissions: admissionsCount,
+      courses: await Course.countDocuments(), 
       enquiries,
-      feesToday: (feesToday[0]?.total ?? 0),
+      feesToday: todayCollection,
       followupToday,
       attendance: attendanceList
     });
-    
-
   } catch (err) {
     console.error('Dashboard stats error:', err);
     res.status(500).json({ error: 'Dashboard stats error' });
   }
 });
+
 
 module.exports = router;
