@@ -13,11 +13,6 @@ const batchSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  institute_uuid: {
-    type: String,
-    required: true,
-    index: true
-  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Batch', batchSchema);
