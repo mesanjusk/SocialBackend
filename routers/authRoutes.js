@@ -49,7 +49,7 @@ router.post('/institute/login', async (req, res) => {
       institute_id: institute._id,
       institute_uuid: institute.institute_uuid,
       institute_name: institute.institute_title,
-      theme_color: institute.theme?.color || ' #ffffff'
+      theme_color: institute.theme?.color || '6fa8dc'
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -84,7 +84,7 @@ router.post('/user/login', async (req, res) => {
       institute_id: institute._id,
       institute_uuid: institute.institute_uuid,
       institute_name: institute.institute_title,
-      theme_color: institute.theme?.color || ' #ffffff',
+      theme_color: institute.theme?.color || '6fa8dc',
       last_password_change: user.last_password_change || null
     });
   } catch (err) {

@@ -20,7 +20,7 @@ const whiteLabelPartnerSchema = new mongoose.Schema({
   }, // e.g., portal.school.com or brand.instify.app
 
   theme: {
-    color: { type: String, default: ' #ffffff' },
+    color: { type: String, default: '6fa8dc' },
     darkColor: { type: String, default: '#1F2937' },
     accentColor: { type: String, default: '#22C55E' },
     logo: { type: String, default: '' },

@@ -26,7 +26,7 @@ module.exports = async function brandingResolver(req, res, next) {
 
   // 4. Optional: attach theme to req
   req.theme = (institute?.theme || partner?.theme || {
-    color: ' #ffffff',
+    color: '6fa8dc',
     logo: '',
     favicon: ''
   });

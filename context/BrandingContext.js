@@ -26,7 +26,7 @@ export const BrandingProvider = ({ children }) => {
         }
 
         // Set CSS variables
-        document.documentElement.style.setProperty('--primary-color', data.theme?.color || ' #ffffff');
+        document.documentElement.style.setProperty('--primary-color', data.theme?.color || '6fa8dc');
         document.documentElement.style.setProperty('--accent-color', data.theme?.accentColor || '#22C55E');
         document.documentElement.style.setProperty('--dark-color', data.theme?.darkColor || '#1F2937');
       });
