@@ -22,16 +22,17 @@ function generateOTP() {
 //
 
 // ✅ Admin login by center code
+// ✅ Admin login by center code
 router.post('/institute/login', async (req, res) => {
   try {
     const { center_code, password } = req.body;
 
-    const user = await User.findOne({
-      login_username: center_code,
-      login_password: password
-    });
-
+    const user = await User.findOne({ login_username: center_code });
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+
+    // Use bcrypt compare!
+    const isValid = await bcrypt.compare(password, user.login_password);
+    if (!isValid) return res.status(401).json({ message: 'Invalid credentials' });
 
     const institute = await Institute.findOne({ institute_uuid: user.institute_uuid });
     if (!institute) return res.status(404).json({ message: 'Institute not found' });
@@ -61,12 +62,12 @@ router.post('/user/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    const user = await User.findOne({
-      login_username: username,
-      login_password: password
-    });
-
+    const user = await User.findOne({ login_username: username });
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+
+    // Use bcrypt compare!
+    const isValid = await bcrypt.compare(password, user.login_password);
+    if (!isValid) return res.status(401).json({ message: 'Invalid credentials' });
 
     const institute = await Institute.findOne({ institute_uuid: user.institute_uuid });
     if (!institute) return res.status(404).json({ message: 'Institute not found' });
@@ -91,6 +92,7 @@ router.post('/user/login', async (req, res) => {
     res.status(500).json({ message: 'server_error' });
   }
 });
+
 
 // ✅ Forgot password
 router.post('/institute/forgot-password', async (req, res) => {
