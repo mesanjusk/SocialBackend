@@ -19,7 +19,7 @@ router.post('/signup', async (req, res) => {
       center_code,
       institute_call_number,
       center_head_name,
-      theme_color = '#10B981',
+      theme_color = ' #ffffff',
       plan_type = 'trial'
     } = req.body;
 
@@ -172,7 +172,7 @@ router.put('/update/:id', async (req, res) => {
       contactEmail: email,
       institute_logo: institute_logo || theme_logo || '',
       theme: {
-        color: theme_color || '#10B981',
+        color: theme_color || ' #ffffff',
         logo: theme_logo || institute_logo || '',
         favicon: theme_favicon || '',
       },

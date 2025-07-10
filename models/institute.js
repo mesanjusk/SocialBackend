@@ -42,7 +42,7 @@ const instituteSchema = new mongoose.Schema({
   },
 
   theme: {
-    color: { type: String, default: '#10B981' },
+    color: { type: String, default: ' #ffffff' },
     logo: { type: String, default: '' },
     favicon: { type: String, default: '' },
     darkColor: { type: String, default: '#1F2937' },

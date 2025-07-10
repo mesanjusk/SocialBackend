@@ -10,7 +10,7 @@ router.get('/branding', (req, res) => {
     theme: req.theme,
     favicon: req.theme?.favicon || '',
     logo: req.theme?.logo || '',
-    color: req.theme?.color || '#10B981'
+    color: req.theme?.color || ' #ffffff'
   });
 });
 

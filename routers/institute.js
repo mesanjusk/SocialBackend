@@ -15,7 +15,7 @@ router.post('/signup', async (req, res) => {
       center_code,              // => password & login
       mobile_number,            // => email substitute
       center_head_name,         // => admin name
-      theme_color = '#10B981',
+      theme_color = ' #ffffff',
       plan_type = 'trial'
     } = req.body;
 

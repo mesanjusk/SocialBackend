@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
     institute: 'Instify',
     logo: '/logo.png',
     favicon: '/favicon.ico',
-    theme: { color: '#10B981' }
+    theme: { color: ' #ffffff' }
   });
 }
 
@@ -34,7 +34,7 @@ router.get('/', async (req, res) => {
       logo: institute.theme?.logo || '/logo.png',
       favicon: institute.theme?.favicon || '/favicon.ico',
       theme: {
-        color: institute.theme?.color || '#10B981'
+        color: institute.theme?.color || ' #ffffff'
       }
     };
 
