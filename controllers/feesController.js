@@ -32,18 +32,56 @@ exports.createFees = async (req, res) => {
   }
 };
 
-// Get All Fees Records
+// Get All Fees Records (optionally filter by date)
 exports.getFees = async (req, res) => {
   try {
-    const { institute_uuid } = req.query;
-    const filter = institute_uuid ? { institute_uuid } : {};
-    const fees = await Fees.find(filter).sort({ createdAt: -1 });
-    res.json({ success: true, data: fees });
+    const { institute_uuid, date } = req.query;
+
+    const match = {};
+    if (institute_uuid) match.institute_uuid = institute_uuid;
+
+    const feesWithStudent = await Fees.aggregate([
+      { $match: match },
+      {
+        $lookup: {
+          from: "students",
+          localField: "student_uuid",
+          foreignField: "uuid",
+          as: "student"
+        }
+      },
+      { $unwind: { path: "$student", preserveNullAndEmptyArrays: true } }
+    ]);
+
+    const result = [];
+
+    for (const fee of feesWithStudent) {
+      const todayPlans = (fee.installmentPlan || []).filter(plan => {
+        if (!plan.dueDate) return false;
+
+        const planDate = new Date(plan.dueDate).toISOString().split('T')[0];
+        const reqDate = new Date(date).toISOString().split('T')[0];
+
+        return planDate === reqDate;
+      });
+
+      if (todayPlans.length > 0) {
+        const fullName = `${fee.student?.firstName || ''} ${fee.student?.middleName || ''} ${fee.student?.lastName || ''}`.trim() || 'Unknown Student';
+        result.push({
+          studentName: fullName,
+          admissionId: fee.admission_uuid || 'N/A',
+          installmentPlan: todayPlans
+        });
+      }
+    }
+
+    res.json(result);
   } catch (error) {
-    console.error('❌ getFees error:', error);
-    res.status(500).json({ success: false, message: 'Server Error' });
+    console.error("❌ getFees error:", error);
+    res.status(500).json({ success: false, message: "Server Error" });
   }
 };
+
 
 // Get Single Fees Record
 exports.getFee = async (req, res) => {

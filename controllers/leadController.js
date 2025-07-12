@@ -63,7 +63,7 @@ exports.createLead = async (req, res) => {
       course: course || studentData?.course || student?.course,
       admission_uuid: admission_uuid || null,
       enquiryDate: enquiryDate || new Date(),
-      followupDate,
+      followupDate: followupDate || new Date(),
       referredBy: referredBy || '',
       followups: Array.isArray(followups) ? followups : [],
       createdBy: createdBy || (req.user ? req.user.name : 'System'),
@@ -79,12 +79,24 @@ exports.createLead = async (req, res) => {
   }
 };
 
-// Get All Leads with joined student data
 exports.getLeads = async (req, res) => {
   try {
-    const { institute_uuid } = req.query;
+    const { institute_uuid, filterBy } = req.query;
+
+    const match = {};
+    if (institute_uuid) match.institute_uuid = institute_uuid;
+
+    // Filter by today's followupDate if requested
+    if (filterBy === 'today') {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date();
+      end.setHours(23, 59, 59, 999);
+      match.followupDate = { $gte: start, $lte: end };
+    }
+
     const leads = await Lead.aggregate([
-      { $match: institute_uuid ? { institute_uuid } : {} },
+      { $match: match },
       {
         $lookup: {
           from: 'students',
@@ -96,12 +108,14 @@ exports.getLeads = async (req, res) => {
       { $unwind: "$studentData" },
       { $sort: { createdAt: -1 } }
     ]);
+
     res.json({ success: true, data: leads });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
 
 // Get Single Lead
 exports.getLead = async (req, res) => {

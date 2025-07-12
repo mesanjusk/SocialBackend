@@ -94,3 +94,13 @@ exports.checkMobileNumber = async (req, res) => {
   }
 };
 
+// DELETE student
+exports.deleteStudent = async (req, res) => {
+  try {
+    await Student.findByIdAndDelete(req.params.uuid);
+    res.json({ message: 'Deleted' });
+  } catch (err) {
+    console.error('Delete student failed:', err);
+    res.status(500).json({ error: 'Delete failed' });
+  }
+};

@@ -27,21 +27,23 @@ router.get('/', async (req, res) => {
       return res.status(400).json({ error: 'Missing institute_uuid' });
     }
 
- const feesRecords = await Fees.find({ institute_uuid });
+const feesRecords = await Fees.find({ institute_uuid });
 
 let todayCollection = 0;
 
 const istNow = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
 const todayStr = new Date(istNow).toISOString().split('T')[0];
 
-feesRecords.forEach((fee) => {
+
+feesRecords.forEach(fee => {
   (fee.installmentPlan || []).forEach(plan => {
-    const planDate = new Date(plan.dueDate).toISOString().split('T')[0];
-    if (planDate === todayStr) {
+    const dueDate = (plan.dueDate || '').slice(0, 10);
+    if (dueDate === todayStr) {
       todayCollection += Number(plan.amount || 0);
     }
   });
 });
+
 
     const [
       students,
