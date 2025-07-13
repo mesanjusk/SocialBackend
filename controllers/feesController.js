@@ -56,14 +56,16 @@ exports.getFees = async (req, res) => {
     const result = [];
 
     for (const fee of feesWithStudent) {
-      const todayPlans = (fee.installmentPlan || []).filter(plan => {
-        if (!plan.dueDate) return false;
+     const todayPlans = (fee.installmentPlan || []).filter(plan => {
+  if (!plan.dueDate || !date) return false;
+  const planDateObj = new Date(plan.dueDate);
+  const reqDateObj = new Date(date);
+  if (isNaN(planDateObj.getTime()) || isNaN(reqDateObj.getTime())) return false;
+  const planDate = planDateObj.toISOString().split('T')[0];
+  const reqDateStr = reqDateObj.toISOString().split('T')[0];
+  return planDate === reqDateStr;
+});
 
-        const planDate = new Date(plan.dueDate).toISOString().split('T')[0];
-        const reqDate = new Date(date).toISOString().split('T')[0];
-
-        return planDate === reqDate;
-      });
 
       if (todayPlans.length > 0) {
         const fullName = `${fee.student?.firstName || ''} ${fee.student?.middleName || ''} ${fee.student?.lastName || ''}`.trim() || 'Unknown Student';
