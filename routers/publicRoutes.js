@@ -2,16 +2,9 @@
 
 const express = require('express');
 const router = express.Router();
+const publicController = require('../controllers/publicController');
 
 // GET /api/branding
-router.get('/branding', (req, res) => {
-  res.json({
-    institute: req.institute?.institute_title || null,
-    theme: req.theme,
-    favicon: req.theme?.favicon || '',
-    logo: req.theme?.logo || '',
-    color: req.theme?.color || '6fa8dc'
-  });
-});
+router.get('/branding', publicController.getBranding);
 
 module.exports = router;
