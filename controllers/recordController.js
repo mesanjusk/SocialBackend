@@ -106,3 +106,70 @@ exports.deleteRecord = async (req, res) => {
     res.status(500).json({ error: 'Delete failed' });
   }
 };
+
+// GET records for an institute with optional type filter and pagination
+exports.getRecords = async (req, res) => {
+  try {
+    const { institute_id } = req.params;
+    const { type, page = 0, limit = 20 } = req.query;
+
+    const filter = { institute_uuid: institute_id };
+    if (type) filter.type = type;
+
+    const safeLimit = Math.min(parseInt(limit), 100);
+
+    const data = await Record.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(parseInt(page) * safeLimit)
+      .limit(safeLimit)
+      .lean();
+
+    const total = await Record.countDocuments(filter);
+
+    res.json({ data, total, page: parseInt(page), limit: safeLimit });
+  } catch (err) {
+    console.error('Fetch records failed:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// GET follow-ups for today (IST timezone)
+exports.getTodayFollowups = async (req, res) => {
+  try {
+    const { institute_id } = req.params;
+    const { page = 0, limit = 20 } = req.query;
+
+    const now = new Date();
+    const todayIST = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    const yyyy = todayIST.getFullYear();
+    const mm = String(todayIST.getMonth() + 1).padStart(2, '0');
+    const dd = String(todayIST.getDate()).padStart(2, '0');
+
+    const startIST = new Date(`${yyyy}-${mm}-${dd}T00:00:00+05:30`);
+    const endIST = new Date(`${yyyy}-${mm}-${dd}T23:59:59+05:30`);
+
+    const startUTC = new Date(startIST.toISOString());
+    const endUTC = new Date(endIST.toISOString());
+
+    const filter = {
+      institute_uuid: institute_id,
+      type: 'followup',
+      followUpDate: { $gte: startUTC, $lte: endUTC }
+    };
+
+    const safeLimit = Math.min(parseInt(limit), 100);
+
+    const data = await Record.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(parseInt(page) * safeLimit)
+      .limit(safeLimit)
+      .lean();
+
+    const total = await Record.countDocuments(filter);
+
+    res.json({ data, total, page: parseInt(page), limit: safeLimit });
+  } catch (err) {
+    console.error('Fetch follow-ups failed:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
