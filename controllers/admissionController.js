@@ -40,13 +40,18 @@ exports.getAdmissionByStudentUUID = async (req, res) => {
   }
 };
 
-// Get All Admissions
+// Get All Admissions (with optional filters)
 exports.getAdmissions = async (req, res) => {
   try {
-    const { institute_uuid } = req.query;
+    const { institute_uuid, course, batch } = req.query;
+
+    const match = {};
+    if (institute_uuid) match.institute_uuid = institute_uuid;
+    if (course) match.course = course;
+    if (batch) match.batch = batch;
 
     const pipeline = [
-      { $match: institute_uuid ? { institute_uuid } : {} },
+      { $match: match },
       {
         $lookup: {
           from: "students",
@@ -58,17 +63,16 @@ exports.getAdmissions = async (req, res) => {
       {
         $lookup: {
           from: "fees",
-          localField: "uuid", // admission_uuid
+          localField: "uuid", 
           foreignField: "admission_uuid",
           as: "fees"
         }
       },
       { $unwind: "$student" },
-      { $unwind: "$fees" }
+      { $unwind: { path: "$fees", preserveNullAndEmptyArrays: true } }
     ];
 
     const admissions = await Admission.aggregate(pipeline);
-
     res.json({ success: true, data: admissions });
   } catch (error) {
     console.error(error);
