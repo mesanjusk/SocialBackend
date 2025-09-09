@@ -57,7 +57,7 @@ router.post('/institute/login', async (req, res) => {
   }
 });
 
-// ✅ General user login
+// ✅ General user login with JWT
 router.post('/user/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -65,7 +65,6 @@ router.post('/user/login', async (req, res) => {
     const user = await User.findOne({ login_username: username });
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
-    // Use bcrypt compare!
     const isValid = await bcrypt.compare(password, user.login_password);
     if (!isValid) return res.status(401).json({ message: 'Invalid credentials' });
 
@@ -75,8 +74,21 @@ router.post('/user/login', async (req, res) => {
     user.last_login_at = new Date();
     await user.save();
 
+    // 🔑 Generate JWT token
+    const token = jwt.sign(
+      {
+        user_id: user._id,
+        user_uuid: user.user_uuid,
+        role: user.role,
+        institute_uuid: user.institute_uuid,
+      },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
     res.status(200).json({
       message: 'success',
+      token, 
       user_id: user._id,
       user_name: user.name,
       user_role: user.role,
