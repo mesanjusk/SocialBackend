@@ -32,6 +32,7 @@ router.post('/embedded/callback', requireAuth, whatsappController.embeddedCallba
 router.delete('/integrations/:id', requireAuth, whatsappController.disconnectIntegration);
 router.post('/messages/text', requireAuth, whatsappController.sendText);
 router.post('/messages/template', requireAuth, whatsappController.sendTemplate);
+router.post('/messages/media', requireAuth, whatsappController.sendMedia);
 router.get('/templates/:integrationId', requireAuth, whatsappController.getTemplates);
 
 module.exports = router;

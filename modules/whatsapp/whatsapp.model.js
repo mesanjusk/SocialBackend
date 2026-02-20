@@ -59,6 +59,9 @@ const whatsappMessageLogSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+whatsappMessageLogSchema.index({ centerId: 1, timestamp: -1 });
+whatsappMessageLogSchema.index({ integrationId: 1, metaMessageId: 1 });
+
 const WhatsAppIntegration = mongoose.model('WhatsAppIntegration', whatsappIntegrationSchema);
 const WhatsAppMessageLog = mongoose.model('WhatsAppMessageLog', whatsappMessageLogSchema);
 
