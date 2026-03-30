@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const whatsappRoutes = require('./routes/whatsappRoutes');
 
 dotenv.config();
 
@@ -62,6 +63,7 @@ app.use('/api/admissions', require('./routers/admissionRoutes'));
 app.use('/api/fees', require('./routers/feesRoutes'));
 app.use('/api/attendance', require('./routers/attendanceRoutes'));
 app.use('/api/dashboard-stats', require('./routers/dashboardStats'));
+app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/whatsapp', require('./modules/whatsapp/whatsapp.routes'));
 
 
