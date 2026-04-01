@@ -1,8 +1,5 @@
 const { WhatsAppIntegration, WhatsAppMessageLog } = require('./whatsapp.model');
-
-async function onIncomingMessage({ centerId, integrationId, messagePayload }) {
-  return { centerId, integrationId, messagePayload };
-}
+const whatsappService = require('./whatsapp.service');
 
 async function verifyWebhook(req, res) {
   if (!process.env.META_WEBHOOK_VERIFY_TOKEN) {
@@ -25,9 +22,7 @@ async function processWebhook(req, res) {
     const entries = req.body?.entry || [];
 
     for (const entry of entries) {
-      const changes = entry?.changes || [];
-
-      for (const change of changes) {
+      for (const change of entry?.changes || []) {
         const value = change?.value || {};
         const phoneNumberId = value?.metadata?.phone_number_id;
         if (!phoneNumberId) continue;
@@ -37,41 +32,51 @@ async function processWebhook(req, res) {
 
         const messages = value?.messages || [];
         for (const msg of messages) {
-          const normalizedType = msg.type === 'image' || msg.type === 'video' || msg.type === 'document' ? 'media' : msg.type || 'text';
-
-          await WhatsAppMessageLog.findOneAndUpdate(
-            { integrationId: integration._id, metaMessageId: msg.id || `${msg.from}-${msg.timestamp}`, status: 'incoming' },
-            {
+          const type = msg.type === 'image' || msg.type === 'video' || msg.type === 'document' ? msg.type : msg.type || 'text';
+          const textBody = msg?.text?.body || msg?.image?.caption || msg?.document?.caption || msg?.video?.caption || '';
+          const existing = await WhatsAppMessageLog.findOne({ integrationId: integration._id, metaMessageId: msg.id || '' }).lean();
+          if (!existing) {
+            await WhatsAppMessageLog.create({
               centerId: integration.centerId,
               integrationId: integration._id,
-              to: msg.from || '',
-              messageType: normalizedType,
+              to: value?.metadata?.display_phone_number || '',
+              from: msg.from || '',
+              direction: 'incoming',
+              messageType: type,
               status: 'incoming',
-              metaMessageId: msg.id || '',
+              metaMessageId: msg.id || `${msg.from}-${msg.timestamp}`,
+              message: textBody,
               timestamp: msg.timestamp ? new Date(Number(msg.timestamp) * 1000) : new Date(),
-            },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
-          );
+              rawPayload: msg,
+            });
+          }
 
-          await onIncomingMessage({
-            centerId: integration.centerId,
-            integrationId: integration._id,
-            messagePayload: msg,
-          });
+          const autoReply = await whatsappService.resolveAutoReply(integration.centerId, textBody);
+          if (autoReply) {
+            if (autoReply.replyMode === 'template' && autoReply.templateName) {
+              await whatsappService.sendTemplateMessage(integration.centerId, msg.from, autoReply.templateName, [], integration._id, autoReply.templateLanguage || 'en_US');
+            } else if (autoReply.replyText) {
+              await whatsappService.sendTextMessage(integration.centerId, msg.from, autoReply.replyText, integration._id);
+            }
+          }
         }
 
-        const statuses = value?.statuses || [];
-        for (const statusEvent of statuses) {
+        for (const statusEvent of value?.statuses || []) {
           await WhatsAppMessageLog.findOneAndUpdate(
-            { integrationId: integration._id, metaMessageId: statusEvent.id || '', status: statusEvent.status || 'sent' },
+            { integrationId: integration._id, metaMessageId: statusEvent.id || '' },
             {
-              centerId: integration.centerId,
-              integrationId: integration._id,
-              to: statusEvent.recipient_id || '',
-              messageType: 'text',
-              status: statusEvent.status || 'sent',
-              metaMessageId: statusEvent.id || '',
-              timestamp: statusEvent.timestamp ? new Date(Number(statusEvent.timestamp) * 1000) : new Date(),
+              $set: {
+                centerId: integration.centerId,
+                integrationId: integration._id,
+                to: statusEvent.recipient_id || '',
+                status: statusEvent.status || 'sent',
+                timestamp: statusEvent.timestamp ? new Date(Number(statusEvent.timestamp) * 1000) : new Date(),
+                rawPayload: statusEvent,
+              },
+              $setOnInsert: {
+                direction: 'outgoing',
+                messageType: 'text',
+              },
             },
             { upsert: true, new: true, setDefaultsOnInsert: true }
           );
@@ -88,5 +93,4 @@ async function processWebhook(req, res) {
 module.exports = {
   verifyWebhook,
   processWebhook,
-  onIncomingMessage,
 };

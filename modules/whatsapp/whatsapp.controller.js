@@ -1,11 +1,11 @@
 const axios = require('axios');
 const mongoose = require('mongoose');
 const Institute = require('../../models/institute');
-const { WhatsAppIntegration } = require('./whatsapp.model');
+const { WhatsAppIntegration, WhatsAppMessageLog, WhatsAppAutoReplyRule } = require('./whatsapp.model');
 const whatsappService = require('./whatsapp.service');
 const { encryptToken } = require('./token.util');
 
-const GRAPH_BASE_URL = 'https://graph.facebook.com/v18.0';
+const GRAPH_BASE_URL = `https://graph.facebook.com/${process.env.META_API_VERSION || 'v18.0'}`;
 
 class HttpError extends Error {
   constructor(message, statusCode) {
@@ -20,25 +20,42 @@ function handleControllerError(res, error) {
   return res.status(status).json({ success: false, message });
 }
 
-function validateCenterId(centerId) {
-  if (!centerId || !mongoose.Types.ObjectId.isValid(centerId)) {
-    throw new HttpError('Invalid centerId', 400);
+async function resolveCenter(centerLike) {
+  if (!centerLike) {
+    throw new HttpError('centerId is required', 400);
   }
+
+  if (mongoose.Types.ObjectId.isValid(centerLike)) {
+    const byId = await Institute.findById(centerLike).lean();
+    if (byId) return byId;
+  }
+
+  const byUuid = await Institute.findOne({ institute_uuid: centerLike }).lean();
+  if (byUuid) return byUuid;
+
+  throw new HttpError('Center not found', 404);
 }
 
-async function ensureCenterAccess(centerId, user) {
-  validateCenterId(centerId);
-
-  const institute = await Institute.findById(centerId).lean();
-  if (!institute) {
-    throw new HttpError('Center not found', 404);
-  }
-
+async function ensureCenterAccess(centerLike, user) {
+  const institute = await resolveCenter(centerLike);
   if (user?.role !== 'superadmin' && user?.institute_uuid !== institute.institute_uuid) {
     throw new HttpError('Forbidden center access', 403);
   }
-
   return institute;
+}
+
+function sanitizeIntegration(doc) {
+  if (!doc) return null;
+  const raw = doc.toObject ? doc.toObject() : doc;
+  const { accessToken, ...rest } = raw;
+  return {
+    ...rest,
+    id: String(rest._id),
+    integrationId: String(rest._id),
+    connected: rest.status === 'connected',
+    phoneNumber: rest.displayName || rest.phoneNumberId || '',
+    phone_number: rest.phoneNumberId || '',
+  };
 }
 
 function ensureMetaEnvForEmbedded() {
@@ -47,15 +64,12 @@ function ensureMetaEnvForEmbedded() {
   }
 }
 
-async function getIntegrationsByCenter(req, res) {
+async function getIntegrations(req, res) {
   try {
-    const { centerId } = req.params;
-    await ensureCenterAccess(centerId, req.user);
-
-    const integrations = await WhatsAppIntegration.find({ centerId }).sort({ updatedAt: -1 }).lean();
-    const sanitized = integrations.map(({ accessToken, ...rest }) => rest);
-
-    return res.status(200).json({ success: true, data: sanitized });
+    const centerLike = req.params.centerId || req.query.centerId || req.query.institute_uuid;
+    const institute = await ensureCenterAccess(centerLike, req.user);
+    const integrations = await WhatsAppIntegration.find({ centerId: institute._id }).sort({ updatedAt: -1 });
+    return res.status(200).json({ success: true, data: integrations.map(sanitizeIntegration) });
   } catch (error) {
     return handleControllerError(res, error);
   }
@@ -63,25 +77,26 @@ async function getIntegrationsByCenter(req, res) {
 
 async function manualConnect(req, res) {
   try {
-    const { centerId, accessToken, phoneNumberId, wabaId, businessId } = req.body;
-
-    if (!centerId || !accessToken || !phoneNumberId || !wabaId) {
+    const { centerId, institute_uuid, accessToken, phoneNumberId, wabaId, businessId, displayName } = req.body;
+    if (!accessToken || !phoneNumberId || !wabaId) {
       return res.status(400).json({ success: false, message: 'centerId, accessToken, phoneNumberId and wabaId are required' });
     }
 
-    await ensureCenterAccess(centerId, req.user);
-
+    const institute = await ensureCenterAccess(centerId || institute_uuid, req.user);
     await whatsappService.verifyToken(accessToken);
-    const phoneRes = await axios.get(`${GRAPH_BASE_URL}/${phoneNumberId}`, {
-      params: { access_token: accessToken, fields: 'id,display_phone_number,verified_name' },
-    });
 
-    const metaDisplayName = phoneRes.data?.verified_name || phoneRes.data?.display_phone_number || '';
+    let metaDisplayName = displayName || '';
+    try {
+      const phoneRes = await axios.get(`${GRAPH_BASE_URL}/${phoneNumberId}`, {
+        params: { access_token: accessToken, fields: 'id,display_phone_number,verified_name' },
+      });
+      metaDisplayName = metaDisplayName || phoneRes.data?.verified_name || phoneRes.data?.display_phone_number || '';
+    } catch (_error) {}
 
     const integration = await WhatsAppIntegration.findOneAndUpdate(
-      { centerId, phoneNumberId },
+      { centerId: institute._id, phoneNumberId },
       {
-        centerId,
+        centerId: institute._id,
         connectionType: 'MANUAL',
         accessToken: encryptToken(accessToken),
         phoneNumberId,
@@ -94,7 +109,7 @@ async function manualConnect(req, res) {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    return res.status(200).json({ success: true, message: 'WhatsApp connected successfully', integrationId: integration._id });
+    return res.status(200).json({ success: true, message: 'WhatsApp connected successfully', data: sanitizeIntegration(integration) });
   } catch (error) {
     return handleControllerError(res, error);
   }
@@ -102,13 +117,10 @@ async function manualConnect(req, res) {
 
 async function embeddedExchange(req, res) {
   try {
-    const { centerId, code } = req.body;
-    if (!centerId || !code) {
-      return res.status(400).json({ success: false, message: 'centerId and code are required' });
-    }
-
+    const { centerId, institute_uuid, code } = req.body;
+    if (!code) return res.status(400).json({ success: false, message: 'centerId and code are required' });
     ensureMetaEnvForEmbedded();
-    await ensureCenterAccess(centerId, req.user);
+    const institute = await ensureCenterAccess(centerId || institute_uuid, req.user);
 
     const tokenRes = await axios.get(`${GRAPH_BASE_URL}/oauth/access_token`, {
       params: {
@@ -142,7 +154,6 @@ async function embeddedExchange(req, res) {
     const phoneRes = await axios.get(`${GRAPH_BASE_URL}/${waba.id}/phone_numbers`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-
     const phone = phoneRes.data?.data?.[0] || {};
 
     if (!business.id || !waba.id || !phone.id) {
@@ -150,9 +161,9 @@ async function embeddedExchange(req, res) {
     }
 
     const integration = await WhatsAppIntegration.findOneAndUpdate(
-      { centerId, phoneNumberId: phone.id },
+      { centerId: institute._id, phoneNumberId: phone.id },
       {
-        centerId,
+        centerId: institute._id,
         connectionType: 'EMBEDDED',
         accessToken: encryptToken(accessToken),
         phoneNumberId: phone.id,
@@ -165,40 +176,7 @@ async function embeddedExchange(req, res) {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    return res.status(200).json({ success: true, message: 'Embedded signup connected', integrationId: integration._id });
-  } catch (error) {
-    return handleControllerError(res, error);
-  }
-}
-
-async function embeddedCallback(req, res) {
-  try {
-    const { centerId, accessToken, phoneNumberId, wabaId, businessId, displayName } = req.body;
-
-    if (!centerId || !accessToken || !phoneNumberId || !wabaId) {
-      return res.status(400).json({ success: false, message: 'centerId, accessToken, phoneNumberId and wabaId are required' });
-    }
-
-    await ensureCenterAccess(centerId, req.user);
-    await whatsappService.verifyToken(accessToken);
-
-    const integration = await WhatsAppIntegration.findOneAndUpdate(
-      { centerId, phoneNumberId },
-      {
-        centerId,
-        connectionType: 'EMBEDDED',
-        accessToken: encryptToken(accessToken),
-        phoneNumberId,
-        wabaId,
-        businessId: businessId || '',
-        displayName: displayName || '',
-        status: 'connected',
-        webhookSubscribed: true,
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
-
-    return res.status(200).json({ success: true, message: 'Embedded callback processed', integrationId: integration._id });
+    return res.status(200).json({ success: true, message: 'Embedded signup connected', data: sanitizeIntegration(integration) });
   } catch (error) {
     return handleControllerError(res, error);
   }
@@ -206,18 +184,15 @@ async function embeddedCallback(req, res) {
 
 async function disconnectIntegration(req, res) {
   try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    const integrationId = req.params.id || req.body.integrationId;
+    if (!mongoose.Types.ObjectId.isValid(integrationId)) {
       return res.status(400).json({ success: false, message: 'Invalid integration id' });
     }
 
-    const integration = await WhatsAppIntegration.findById(id);
-    if (!integration) {
-      return res.status(404).json({ success: false, message: 'Integration not found' });
-    }
+    const integration = await WhatsAppIntegration.findById(integrationId);
+    if (!integration) return res.status(404).json({ success: false, message: 'Integration not found' });
 
     await ensureCenterAccess(String(integration.centerId), req.user);
-
     integration.status = 'disconnected';
     integration.webhookSubscribed = false;
     await integration.save();
@@ -228,84 +203,170 @@ async function disconnectIntegration(req, res) {
   }
 }
 
+async function sendMessage(req, res) {
+  try {
+    const { centerId, institute_uuid, to, message, integrationId, type, templateName, params, mediaUrl, mediaType, caption, templateLanguage } = req.body;
+    if (!to) return res.status(400).json({ success: false, message: 'Recipient number is required' });
+    const institute = await ensureCenterAccess(centerId || institute_uuid, req.user);
+    let data;
+
+    if (type === 'template') {
+      if (!templateName) return res.status(400).json({ success: false, message: 'templateName is required' });
+      data = await whatsappService.sendTemplateMessage(institute._id, to, templateName, params || [], integrationId, templateLanguage || 'en_US');
+    } else if (type === 'media' || type === 'image' || type === 'document' || type === 'video') {
+      if (!mediaUrl) return res.status(400).json({ success: false, message: 'mediaUrl is required' });
+      data = await whatsappService.sendMediaMessage(institute._id, to, mediaUrl, integrationId, mediaType || type || 'image', caption || '');
+    } else {
+      if (!message) return res.status(400).json({ success: false, message: 'message is required' });
+      data = await whatsappService.sendTextMessage(institute._id, to, message, integrationId);
+    }
+
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    return handleControllerError(res, error);
+  }
+}
+
 async function sendText(req, res) {
-  try {
-    const { centerId, to, message, integrationId } = req.body;
-    if (!centerId || !to || !message) {
-      return res.status(400).json({ success: false, message: 'centerId, to and message are required' });
-    }
-
-    await ensureCenterAccess(centerId, req.user);
-
-    const data = await whatsappService.sendTextMessage(centerId, to, message, integrationId);
-    return res.status(200).json({ success: true, data });
-  } catch (error) {
-    return handleControllerError(res, error);
-  }
+  req.body.type = 'text';
+  return sendMessage(req, res);
 }
-
 async function sendTemplate(req, res) {
-  try {
-    const { centerId, to, templateName, params, integrationId } = req.body;
-    if (!centerId || !to || !templateName) {
-      return res.status(400).json({ success: false, message: 'centerId, to and templateName are required' });
-    }
-
-    await ensureCenterAccess(centerId, req.user);
-
-    const data = await whatsappService.sendTemplateMessage(centerId, to, templateName, params, integrationId);
-    return res.status(200).json({ success: true, data });
-  } catch (error) {
-    return handleControllerError(res, error);
-  }
+  req.body.type = 'template';
+  return sendMessage(req, res);
 }
-
 async function sendMedia(req, res) {
-  try {
-    const { centerId, to, mediaUrl, integrationId } = req.body;
-    if (!centerId || !to || !mediaUrl) {
-      return res.status(400).json({ success: false, message: 'centerId, to and mediaUrl are required' });
-    }
-
-    await ensureCenterAccess(centerId, req.user);
-
-    const data = await whatsappService.sendMediaMessage(centerId, to, mediaUrl, integrationId);
-    return res.status(200).json({ success: true, data });
-  } catch (error) {
-    return handleControllerError(res, error);
-  }
+  req.body.type = req.body.mediaType || 'media';
+  return sendMessage(req, res);
 }
 
 async function getTemplates(req, res) {
   try {
-    const { integrationId } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(integrationId)) {
-      return res.status(400).json({ success: false, message: 'Invalid integration id' });
-    }
-
+    const integrationId = req.params.integrationId || req.query.integrationId;
+    if (!mongoose.Types.ObjectId.isValid(integrationId)) return res.status(400).json({ success: false, message: 'Invalid integration id' });
     const integration = await WhatsAppIntegration.findById(integrationId);
-    if (!integration) {
-      return res.status(404).json({ success: false, message: 'Integration not found' });
-    }
-
+    if (!integration) return res.status(404).json({ success: false, message: 'Integration not found' });
     await ensureCenterAccess(String(integration.centerId), req.user);
-
     const data = await whatsappService.fetchTemplates(integration.centerId, integrationId);
-    return res.status(200).json({ success: true, data });
+    return res.status(200).json({ success: true, data: data.data || [] });
+  } catch (error) {
+    return handleControllerError(res, error);
+  }
+}
+
+async function syncTemplates(req, res) {
+  return getTemplates(req, res);
+}
+
+async function getConnectedNumbers(req, res) {
+  try {
+    const centerLike = req.params.centerId || req.query.centerId || req.query.institute_uuid;
+    const institute = await ensureCenterAccess(centerLike, req.user);
+    const integrations = await WhatsAppIntegration.find({ centerId: institute._id, status: 'connected' }).sort({ updatedAt: -1 }).lean();
+    return res.status(200).json({ success: true, data: integrations.map(sanitizeIntegration) });
+  } catch (error) {
+    return handleControllerError(res, error);
+  }
+}
+
+async function getMessages(req, res) {
+  try {
+    const centerLike = req.query.centerId || req.query.institute_uuid;
+    const institute = await ensureCenterAccess(centerLike, req.user);
+    const rows = await whatsappService.listMessageLogs(institute._id, req.query.integrationId, Number(req.query.limit) || 100);
+    return res.status(200).json({ success: true, data: rows });
+  } catch (error) {
+    return handleControllerError(res, error);
+  }
+}
+
+async function getAnalytics(req, res) {
+  try {
+    const centerLike = req.query.centerId || req.query.institute_uuid;
+    const institute = await ensureCenterAccess(centerLike, req.user);
+    const analytics = await whatsappService.getAnalytics(institute._id, req.query.integrationId);
+    return res.status(200).json({ success: true, data: analytics });
+  } catch (error) {
+    return handleControllerError(res, error);
+  }
+}
+
+async function getAutoReplyRules(req, res) {
+  try {
+    const centerLike = req.query.centerId || req.query.institute_uuid;
+    const institute = await ensureCenterAccess(centerLike, req.user);
+    const rows = await whatsappService.getAutoReplyRules(institute._id);
+    return res.status(200).json({ success: true, data: rows });
+  } catch (error) {
+    return handleControllerError(res, error);
+  }
+}
+
+async function createAutoReplyRule(req, res) {
+  try {
+    const centerLike = req.body.centerId || req.body.institute_uuid;
+    const institute = await ensureCenterAccess(centerLike, req.user);
+    const rule = await whatsappService.createAutoReplyRule(institute._id, req.body);
+    return res.status(201).json({ success: true, data: rule });
+  } catch (error) {
+    return handleControllerError(res, error);
+  }
+}
+
+async function updateAutoReplyRule(req, res) {
+  try {
+    const existing = await WhatsAppAutoReplyRule.findById(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, message: 'Auto reply rule not found' });
+    await ensureCenterAccess(String(existing.centerId), req.user);
+    const rule = await whatsappService.updateAutoReplyRule(req.params.id, req.body);
+    return res.status(200).json({ success: true, data: rule });
+  } catch (error) {
+    return handleControllerError(res, error);
+  }
+}
+
+async function deleteAutoReplyRule(req, res) {
+  try {
+    const existing = await WhatsAppAutoReplyRule.findById(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, message: 'Auto reply rule not found' });
+    await ensureCenterAccess(String(existing.centerId), req.user);
+    await whatsappService.deleteAutoReplyRule(req.params.id);
+    return res.status(200).json({ success: true, message: 'Auto reply rule deleted' });
+  } catch (error) {
+    return handleControllerError(res, error);
+  }
+}
+
+async function toggleAutoReplyRule(req, res) {
+  try {
+    const existing = await WhatsAppAutoReplyRule.findById(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, message: 'Auto reply rule not found' });
+    await ensureCenterAccess(String(existing.centerId), req.user);
+    const rule = await whatsappService.toggleAutoReplyRule(req.params.id);
+    return res.status(200).json({ success: true, data: rule });
   } catch (error) {
     return handleControllerError(res, error);
   }
 }
 
 module.exports = {
-  getIntegrationsByCenter,
+  getIntegrations,
   manualConnect,
   embeddedExchange,
-  embeddedCallback,
   disconnectIntegration,
   sendText,
   sendTemplate,
   sendMedia,
+  sendMessage,
   getTemplates,
+  syncTemplates,
+  getConnectedNumbers,
+  getMessages,
+  getAnalytics,
+  getAutoReplyRules,
+  createAutoReplyRule,
+  updateAutoReplyRule,
+  deleteAutoReplyRule,
+  toggleAutoReplyRule,
   ensureCenterAccess,
 };
